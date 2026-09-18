@@ -82,9 +82,7 @@ router.put('/admin/settings', adminAuth(), async (c) => {
       'key_duration', 'brand_name', 'site_title',
       'announcement', 'maintenance_mode', 'admin_password',
       'guide_video_ipa', 'guide_video_vpn', 'admin_zalo', 'support_link',
-      'download_ipa_url', 'download_shadowrocket_url',
-      'welcome_voice_enabled', 'welcome_voice_text',
-      'bg_music_enabled', 'bg_music_url'
+      'download_ipa_url', 'download_shadowrocket_url'
     ];
     
     const updates: Record<string, string> = {};

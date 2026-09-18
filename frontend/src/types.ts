@@ -44,10 +44,6 @@ export interface SystemStats {
   siteTitle?: string | null;
   downloadIpaUrl?: string | null;
   downloadShadowrocketUrl?: string | null;
-  welcomeVoiceEnabled?: boolean;
-  welcomeVoiceText?: string | null;
-  bgMusicUrl?: string | null;
-  bgMusicEnabled?: boolean;
 }
 
 export interface ApiResponse<T = unknown> {

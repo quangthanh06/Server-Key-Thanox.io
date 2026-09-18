@@ -16,7 +16,6 @@ import { KeyDisplay } from '../components/KeyDisplay';
 import { SessionInfo } from '../components/SessionInfo';
 import { GuideCard } from '../components/GuideCard';
 import { OnlineCounter } from '../components/OnlineCounter';
-import { AudioWelcome } from '../components/AudioWelcome';
 import { Footer } from '../components/Footer';
 
 export function Home() {
@@ -97,14 +96,6 @@ export function Home() {
   return (
     <div className="pk-wrap">
       <Header />
-
-      {/* Voice Welcome AI & Chill Background Music */}
-      <AudioWelcome 
-        enabled={state.stats?.welcomeVoiceEnabled ?? true}
-        voiceText={state.stats?.welcomeVoiceText ?? undefined}
-        musicUrl={state.stats?.bgMusicUrl ?? undefined}
-        musicEnabled={state.stats?.bgMusicEnabled ?? true}
-      />
 
       {/* Social Proof: Real-time Online Counter */}
       <OnlineCounter todayKeys={state.stats?.dailyUsed} />
