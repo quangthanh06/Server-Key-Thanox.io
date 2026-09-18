@@ -5,7 +5,6 @@ import { AnnouncementBanner } from '../components/AnnouncementBanner';
 import { MaintenanceScreen } from '../components/MaintenanceScreen';
 import { LimitReachedCard } from '../components/LimitReachedCard';
 import { Card } from '../components/Card';
-import { StepsTracker } from '../components/StepsTracker';
 import { TypeSelector } from '../components/TypeSelector';
 import { PackageInfo } from '../components/PackageInfo';
 import { ResultBox } from '../components/ResultBox';
@@ -13,7 +12,6 @@ import { ErrorBox } from '../components/ErrorBox';
 import { LoadingOverlay } from '../components/LoadingOverlay';
 import { ActionButton } from '../components/ActionButton';
 import { SessionInfo } from '../components/SessionInfo';
-import { OnlineCounter } from '../components/OnlineCounter';
 import { Footer } from '../components/Footer';
 
 export function Home() {
@@ -95,9 +93,6 @@ export function Home() {
     <div className="wrap">
       <Header />
 
-      {/* Social Proof: Real-time Online Counter */}
-      <OnlineCounter todayKeys={state.stats?.dailyUsed} />
-
       {/* Admin Announcement Banner (if configured) */}
       {state.stats?.announcement && (
         <AnnouncementBanner message={state.stats.announcement} />
@@ -116,9 +111,6 @@ export function Home() {
           {state.status !== 'key_ready' && (
             <Card title="Nhận Key Miễn Phí" tag="// FREE KEY SYSTEM">
               <LoadingOverlay isLoading={state.isLoading} />
-              
-              {/* Responsive 4-Step Flow Tracker */}
-              <StepsTracker status={state.status} />
 
               {/* Type Selector (IPA vs VPN) */}
               <TypeSelector 
@@ -135,42 +127,44 @@ export function Home() {
                 <>
                   <ResultBox 
                     bypassUrl={state.bypassUrl} 
-                    label="// BƯỚC 1: LINK VƯỢT ĐÃ SẴN SÀNG"
-                    buttonText="⚡ MỞ LINK VƯỢT BƯỚC 1"
+                    label="// LINK ĐÃ SẴN SÀNG"
+                    buttonText="⚡ VƯỢT LINK NGAY"
                   />
 
-                  <div style={{
-                    marginTop: '1rem',
-                    padding: '0.85rem 1rem',
-                    background: 'rgba(0, 240, 255, 0.05)',
-                    border: '1px solid rgba(0, 240, 255, 0.25)',
-                    borderRadius: '8px',
-                    textAlign: 'left'
-                  }}>
-                    <div style={{ color: 'var(--neon-cy)', fontWeight: 700, fontSize: '0.75rem', marginBottom: '0.35rem' }}>
-                      🔒 XÁC MINH VƯỢT LINK 1:
+                  {state.stats?.step1Passcode && (
+                    <div style={{
+                      marginTop: '1rem',
+                      padding: '0.85rem 1rem',
+                      background: 'rgba(0, 240, 255, 0.05)',
+                      border: '1px solid rgba(0, 240, 255, 0.25)',
+                      borderRadius: '8px',
+                      textAlign: 'left'
+                    }}>
+                      <div style={{ color: 'var(--neon-cy)', fontWeight: 700, fontSize: '0.75rem', marginBottom: '0.35rem' }}>
+                        🔒 XÁC MINH VƯỢT LINK 1:
+                      </div>
+                      <div style={{ color: 'var(--text-dim)', fontSize: '0.72rem', marginBottom: '0.6rem', lineHeight: '1.4' }}>
+                        Vui lòng hoàn thành vượt link ở tab vừa mở. Nếu bạn có <b>Mã Xác Nhận</b> ở trang đích, hãy nhập vào đây:
+                      </div>
+                      <input 
+                        type="text"
+                        placeholder="Nhập mã xác nhận..."
+                        value={passcode}
+                        onChange={(e) => setPasscode(e.target.value)}
+                        style={{
+                          width: '100%',
+                          padding: '0.55rem 0.75rem',
+                          background: 'rgba(5, 10, 25, 0.8)',
+                          border: '1px solid rgba(0, 240, 255, 0.3)',
+                          borderRadius: '6px',
+                          color: '#fff',
+                          fontFamily: 'var(--font-mono)',
+                          fontSize: '0.85rem',
+                          boxSizing: 'border-box'
+                        }}
+                      />
                     </div>
-                    <div style={{ color: 'var(--text-dim)', fontSize: '0.72rem', marginBottom: '0.6rem', lineHeight: '1.4' }}>
-                      Vui lòng hoàn thành vượt link ở tab vừa mở. Nếu bạn có <b>Mã Xác Nhận</b> ở trang đích, hãy nhập vào đây:
-                    </div>
-                    <input 
-                      type="text"
-                      placeholder="Nhập mã xác nhận (nếu có)..."
-                      value={passcode}
-                      onChange={(e) => setPasscode(e.target.value)}
-                      style={{
-                        width: '100%',
-                        padding: '0.55rem 0.75rem',
-                        background: 'rgba(5, 10, 25, 0.8)',
-                        border: '1px solid rgba(0, 240, 255, 0.3)',
-                        borderRadius: '6px',
-                        color: '#fff',
-                        fontFamily: 'var(--font-mono)',
-                        fontSize: '0.85rem',
-                        boxSizing: 'border-box'
-                      }}
-                    />
-                  </div>
+                  )}
                 </>
               )}
 
