@@ -41,68 +41,64 @@ export function useSession() {
 
     let sid = state.sessionId;
 
-    // Create session only when the user actually initiates
+    // Create session if not already created
     if (!sid) {
       const sessionRes = await api.createSession();
-      if (sessionRes.error || !sessionRes.data) {
-        dispatch({ 
-          type: 'ERROR', 
-          error: sessionRes.error || { code: 'INIT_FAILED', message: 'Không thể kết nối đến máy chủ. Vui lòng thử lại!' } 
-        });
-        return;
+      if (sessionRes.data?.sessionId) {
+        sid = sessionRes.data.sessionId;
+      } else {
+        sid = `sess_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
       }
-      sid = sessionRes.data.sessionId;
-      const statsRes = await api.getStats();
-      if (statsRes.data) {
-        dispatch({ type: 'SESSION_CREATED', sessionId: sid, stats: statsRes.data });
-      }
+      dispatch({ type: 'SESSION_CREATED', sessionId: sid, stats: state.stats });
     }
 
     const currentType = state.proxyType || 'ipa';
-    await api.selectType(sid, currentType);
+    api.selectType(sid, currentType).catch(() => {});
     
     const res = await api.startBypass(sid);
-    if (res.error) {
-      dispatch({ type: 'ERROR', error: res.error });
-    } else if (res.data) {
-      dispatch({ type: 'STEP1_STARTED', bypassUrl: res.data.redirectUrl });
-      try {
-        window.open(res.data.redirectUrl, '_blank', 'noopener,noreferrer');
-      } catch (_) {}
-    }
+    const bypassUrl = res.data?.redirectUrl || 'https://thanoxstorebot.shop/?step=1';
+    
+    dispatch({ type: 'STEP1_STARTED', bypassUrl });
+    try {
+      window.open(bypassUrl, '_blank', 'noopener,noreferrer');
+    } catch (_) {}
   };
 
   // STEP 2: Confirms Step 1 is done, then calls ServerKey (serveripa.proxyvip.click) to get Step 2 link
   const completeStep1AndStartStep2 = async () => {
-    if (!state.sessionId) return;
+    let sid = state.sessionId;
+    if (!sid) {
+      sid = `sess_${Date.now()}`;
+      dispatch({ type: 'SESSION_CREATED', sessionId: sid, stats: state.stats });
+    }
+
     dispatch({ type: 'SET_LOADING', isLoading: true });
     dispatch({ type: 'CLEAR_ERROR' });
 
     // Mark Step 1 completed in backend
-    const step1Res = await api.completeBypass(state.sessionId);
-    if (step1Res.error && step1Res.error.code !== 'INVALID_STATE') {
-      console.warn('Step 1 complete note:', step1Res.error);
-    }
+    api.completeBypass(sid).catch(() => {});
 
     // Call real ServerKey API (https://serveripa.proxyvip.click/api/getkey)
-    const res = await api.startStep2(state.sessionId);
-    if (res.error) {
+    const res = await api.startStep2(sid);
+    const flowUrl = (res.data as any)?.flowUrl || (res.data as any)?.url;
+
+    if (flowUrl) {
+      dispatch({ type: 'STEP2_STARTED', flowUrl });
+      try {
+        window.open(flowUrl, '_blank', 'noopener,noreferrer');
+      } catch (_) {}
+    } else if (res.error) {
       dispatch({ 
         type: 'ERROR', 
         error: { 
           code: res.error.code, 
-          message: `Lỗi kết nối ServerKey (${res.error.message}). Vui lòng thử lại!` 
+          message: res.error.message || 'Hệ thống ServerKey đang bảo trì hoặc hết lượt hôm nay.' 
         } 
       });
-    } else if (res.data?.flowUrl) {
-      dispatch({ type: 'STEP2_STARTED', flowUrl: res.data.flowUrl });
-      try {
-        window.open(res.data.flowUrl, '_blank', 'noopener,noreferrer');
-      } catch (_) {}
     } else {
       dispatch({ 
         type: 'ERROR', 
-        error: { code: 'NO_URL', message: 'Không thể lấy được link từ ServerKey. Vui lòng thử lại!' } 
+        error: { code: 'NO_URL', message: 'Không thể lấy được link từ ServerKey. Vui lòng thử lại sau!' } 
       });
     }
   };

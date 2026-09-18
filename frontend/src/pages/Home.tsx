@@ -38,6 +38,8 @@ export function Home() {
     return () => clearInterval(timer);
   }, [bypassCooldown]);
 
+  const [passcode, setPasscode] = useState('');
+
   const isIpLimitReached = Boolean(
     state.stats && 
     state.stats.ipLimit > 0 && 
@@ -53,9 +55,6 @@ export function Home() {
     } else if (state.status === 'step1_pending') {
       // Step 1 done: Calls ServerKey (serveripa.proxyvip.click/api/getkey)
       actions.completeStep1AndStartStep2();
-    } else if (state.status === 'step2_pending' || state.status === 'step2_completed') {
-      // Step 2 done: Claims the final key
-      actions.completeStep2AndClaimKey();
     }
   };
 
@@ -75,13 +74,7 @@ export function Home() {
       if (bypassCooldown > 0) {
         return `⏳ ĐANG VƯỢT LINK 1 (${bypassCooldown}s)...`;
       }
-      return '✓ TIẾP TỤC QUA BƯỚC 2 (SERVERKEY)';
-    }
-    if (state.status === 'step2_pending' || state.status === 'step2_completed') {
-      if (bypassCooldown > 0) {
-        return `⏳ ĐANG VƯỢT SERVERKEY (${bypassCooldown}s)...`;
-      }
-      return '🔑 BẤM ĐỂ LẤY KEY';
+      return '✓ TÔI ĐÃ VƯỢT XONG LINK 1 → CHUYỂN QUA SERVERKEY';
     }
     return undefined;
   };
@@ -132,32 +125,130 @@ export function Home() {
               
               {/* Step 1: My Bypass Link */}
               {state.status === 'step1_pending' && state.bypassUrl && (
-                <ResultBox 
-                  bypassUrl={state.bypassUrl} 
-                  label="// BƯỚC 1: LINK VƯỢT ĐÃ SẴN SÀNG"
-                  buttonText="⚡ MỞ LINK VƯỢT BƯỚC 1"
-                />
+                <>
+                  <ResultBox 
+                    bypassUrl={state.bypassUrl} 
+                    label="// BƯỚC 1: LINK VƯỢT ĐÃ SẴN SÀNG"
+                    buttonText="⚡ MỞ LINK VƯỢT BƯỚC 1"
+                  />
+
+                  <div style={{
+                    marginTop: '1rem',
+                    padding: '0.85rem 1rem',
+                    background: 'rgba(0, 240, 255, 0.05)',
+                    border: '1px solid rgba(0, 240, 255, 0.25)',
+                    borderRadius: '8px',
+                    textAlign: 'left'
+                  }}>
+                    <div style={{ color: 'var(--neon-cy)', fontWeight: 700, fontSize: '0.75rem', marginBottom: '0.35rem' }}>
+                      🔒 XÁC MINH VƯỢT LINK 1:
+                    </div>
+                    <div style={{ color: 'var(--text-dim)', fontSize: '0.72rem', marginBottom: '0.6rem', lineHeight: '1.4' }}>
+                      Vui lòng hoàn thành vượt link ở tab vừa mở. Nếu bạn có <b>Mã Xác Nhận</b> ở trang đích, hãy nhập vào đây:
+                    </div>
+                    <input 
+                      type="text"
+                      placeholder="Nhập mã xác nhận (nếu có)..."
+                      value={passcode}
+                      onChange={(e) => setPasscode(e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '0.55rem 0.75rem',
+                        background: 'rgba(5, 10, 25, 0.8)',
+                        border: '1px solid rgba(0, 240, 255, 0.3)',
+                        borderRadius: '6px',
+                        color: '#fff',
+                        fontFamily: 'var(--font-mono)',
+                        fontSize: '0.85rem',
+                        boxSizing: 'border-box'
+                      }}
+                    />
+                  </div>
+                </>
               )}
 
-              {/* Step 2: Real ServerKey Link (serveripa.proxyvip.click) */}
+              {/* Step 2: Direct ServerKey Notice & Link */}
               {state.status === 'step2_pending' && state.step2FlowUrl && (
-                <ResultBox 
-                  bypassUrl={state.step2FlowUrl} 
-                  label="// BƯỚC 2: LINK TỪ SERVERKEY ĐÃ SẴN SÀNG"
-                  buttonText="⚡ MỞ LINK VƯỢT SERVERKEY NGAY"
-                />
+                <div style={{
+                  marginTop: '1.25rem',
+                  padding: '1.2rem',
+                  background: 'linear-gradient(180deg, rgba(0, 240, 255, 0.08) 0%, rgba(138, 43, 226, 0.08) 100%)',
+                  border: '1px solid var(--border-cy)',
+                  borderRadius: '10px',
+                  textAlign: 'center',
+                  boxShadow: '0 0 20px rgba(0, 240, 255, 0.15)'
+                }}>
+                  <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>🚀</div>
+                  <h3 style={{ fontFamily: 'var(--font-brand)', color: '#fff', fontSize: '1.1rem', margin: '0 0 0.5rem' }}>
+                    ĐÃ CHUYỂN SANG SERVERKEY!
+                  </h3>
+                  <p style={{ fontSize: '0.78rem', color: 'var(--text-dim)', margin: '0 0 1rem', lineHeight: '1.5' }}>
+                    Hệ thống đã kết nối trực tiếp với <b>serveripa.proxyvip.click</b> và tạo link vượt mới nhất.
+                  </p>
+
+                  <div style={{
+                    padding: '0.75rem 1rem',
+                    background: 'rgba(245, 255, 61, 0.08)',
+                    border: '1px dashed rgba(245, 255, 61, 0.4)',
+                    borderRadius: '8px',
+                    color: 'var(--neon-yl)',
+                    fontSize: '0.75rem',
+                    lineHeight: '1.5',
+                    marginBottom: '1.25rem',
+                    textAlign: 'left'
+                  }}>
+                    ⭐ <b>LƯU Ý QUAN TRỌNG:</b>
+                    <br />
+                    Vui lòng hoàn thành link vượt ServerKey bên dưới. <b>Mã Key sẽ hiển thị trực tiếp tại trang web ServerKey</b> để bạn sao chép. Bạn <b>không cần quay lại trang web này nữa!</b>
+                  </div>
+
+                  <a 
+                    href={state.step2FlowUrl} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="pk-action-btn"
+                    style={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center', 
+                      textDecoration: 'none',
+                      fontSize: '0.9rem',
+                      padding: '0.85rem'
+                    }}
+                  >
+                    ⚡ MỞ LINK SERVERKEY ĐỂ LẤY KEY
+                  </a>
+
+                  <button 
+                    type="button" 
+                    onClick={actions.resetFlow}
+                    style={{ 
+                      marginTop: '1rem', 
+                      background: 'transparent', 
+                      border: 'none', 
+                      color: 'var(--text-dim)', 
+                      fontSize: '0.75rem', 
+                      cursor: 'pointer', 
+                      textDecoration: 'underline' 
+                    }}
+                  >
+                    🔄 Nhận thêm lượt khác / Chọn lại
+                  </button>
+                </div>
               )}
               
               <ErrorBox error={state.error} onDismiss={actions.clearError} />
               
-              {/* Main Action CTA Button — with anti-cheat cooldown & clean label */}
-              <ActionButton 
-                onClick={handleActionClick}
-                disabled={isActionDisabled}
-                isLoading={state.isLoading}
-                proxyType={state.proxyType}
-                textOverride={getButtonText()}
-              />
+              {/* Action Button: only shown if not already in Step 2 */}
+              {state.status !== 'step2_pending' && (
+                <ActionButton 
+                  onClick={handleActionClick}
+                  disabled={isActionDisabled}
+                  isLoading={state.isLoading}
+                  proxyType={state.proxyType}
+                  textOverride={getButtonText()}
+                />
+              )}
             </Card>
           )}
 

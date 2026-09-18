@@ -6,10 +6,28 @@ export async function apiRequest<T>(endpoint: string, options?: RequestInit): Pr
       headers: { 'Content-Type': 'application/json', ...options?.headers },
       ...options
     });
-    const json = await res.json();
-    if (json.success) return { data: json.data, error: null };
-    return { data: null, error: json.error || { code: 'UNKNOWN_ERROR', message: 'An unknown error occurred' } };
+    
+    const text = await res.text();
+    let json: any = null;
+    try {
+      json = text ? JSON.parse(text) : null;
+    } catch (_) {
+      json = null;
+    }
+
+    if (json && json.success) return { data: json.data, error: null };
+    if (json && json.ok && json.url) return { data: json as any, error: null };
+    if (json && json.error) return { data: null, error: json.error };
+
+    if (!res.ok) {
+      return { 
+        data: null, 
+        error: { code: `HTTP_${res.status}`, message: json?.msg || `Lỗi máy chủ (${res.status}). Vui lòng thử lại!` } 
+      };
+    }
+
+    return { data: null, error: { code: 'EMPTY_RESPONSE', message: 'Máy chủ phản hồi trống' } };
   } catch (err: any) {
-    return { data: null, error: { code: 'NETWORK_ERROR', message: err.message || 'Network error' } };
+    return { data: null, error: { code: 'NETWORK_ERROR', message: err.message || 'Lỗi kết nối mạng' } };
   }
 }

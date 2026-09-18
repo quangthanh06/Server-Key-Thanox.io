@@ -1,7 +1,7 @@
 import { SessionState, ProxyType, SystemStats } from '../types';
 
 export type Action = 
-  | { type: 'SESSION_CREATED'; sessionId: string; stats: SystemStats }
+  | { type: 'SESSION_CREATED'; sessionId: string; stats?: SystemStats | null }
   | { type: 'TYPE_SELECTED'; proxyType: ProxyType }
   | { type: 'STEP1_STARTED'; bypassUrl: string }
   | { type: 'STEP1_COMPLETED' }
@@ -34,7 +34,7 @@ export function sessionReducer(state: SessionState, action: Action): SessionStat
       return { 
         ...state, 
         sessionId: action.sessionId, 
-        stats: action.stats, 
+        stats: action.stats !== undefined ? action.stats : state.stats, 
         isLoading: false, 
         error: null 
       };
