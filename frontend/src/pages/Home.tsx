@@ -171,20 +171,17 @@ export function Home() {
       if (completedSteps > 0 && completedSteps < totalBypassSteps) {
         return `⚡ TIẾP TỤC VƯỢT LINK ${completedSteps + 1} (BƯỚC ${completedSteps + 1}/${totalBypassSteps})`;
       }
-      if (totalBypassSteps > 1) {
-        return `⚡ BẮT ĐẦU XÁC MINH (BƯỚC 1/${totalBypassSteps}) • ${typeLabel}`;
-      }
       return `⚡ TẠO LINK NHẬN KEY PROXY ${typeLabel}`;
     }
 
     if (state.status === 'step1_pending') {
       if (bypassCooldown > 0) {
-        return `⏳ ĐANG XÁC THỰC BƯỚC ${currentStepIndex + 1}/${totalBypassSteps} (${bypassCooldown}s)...`;
+        return `⏳ ĐANG VƯỢT LINK ${currentStepIndex + 1}/${totalBypassSteps} (${bypassCooldown}s)...`;
       }
       if (currentStepIndex < totalBypassSteps - 1) {
-        return `✓ ĐÃ XONG BƯỚC ${currentStepIndex + 1} → SANG BƯỚC ${currentStepIndex + 2}/${totalBypassSteps}`;
+        return `✓ ĐÃ VƯỢT XONG LINK ${currentStepIndex + 1} → SANG LINK ${currentStepIndex + 2}/${totalBypassSteps}`;
       }
-      return `🚀 HOÀN TẤT XÁC MINH → CẤP PHÁT KEY (SERVERKEY)`;
+      return `✓ ĐÃ VƯỢT XONG TẤT CẢ → LẤY KEY TẠI SERVERKEY`;
     }
     return undefined;
   };
