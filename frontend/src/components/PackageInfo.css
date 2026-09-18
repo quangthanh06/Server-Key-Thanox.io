@@ -1,197 +1,132 @@
+/* ===========================
+   PACKAGE CARD (serveripa.proxyvip.click)
+   =========================== */
 .package-card {
-  border: 1px solid rgba(255, 255, 255, 0.09);
-  border-radius: 12px;
-  padding: 1.15rem;
-  margin-bottom: 1.15rem;
-  background: rgba(5, 7, 18, 0.65);
+  border: 1px solid var(--border-dim);
+  border-radius: 8px;
+  padding: 1.1rem;
+  margin-bottom: 1.1rem;
+  background: rgba(5, 6, 13, 0.5);
   position: relative;
-  box-shadow: inset 0 0 16px rgba(0, 240, 255, 0.03);
 }
 
 .pkg-head {
   display: flex;
   align-items: center;
   gap: 0.85rem;
-  margin-bottom: 0.85rem;
+  margin-bottom: 0.75rem;
 }
 
 .pkg-icon {
   width: 44px;
   height: 44px;
-  background: linear-gradient(135deg, rgba(0, 240, 255, 0.18), rgba(255, 0, 212, 0.12));
+  background: linear-gradient(135deg, rgba(0, 240, 255, 0.2), rgba(255, 0, 212, 0.15));
   border: 1px solid var(--border-cy);
-  border-radius: 10px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.25rem;
+  font-size: 1.2rem;
   flex-shrink: 0;
-  box-shadow: 0 0 14px rgba(0, 240, 255, 0.25);
-}
-
-.pkg-title-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
+  box-shadow: 0 0 12px rgba(0, 240, 255, 0.2);
 }
 
 .pkg-name {
-  font-family: var(--font-heading);
-  font-size: 0.92rem;
+  font-family: var(--font-brand);
+  font-size: 0.82rem;
   font-weight: 700;
   color: #fff;
-  letter-spacing: 0.02em;
-  text-shadow: 0 0 8px rgba(0, 240, 255, 0.35);
-}
-
-.pkg-live-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  font-size: 0.62rem;
-  font-weight: 700;
-  color: var(--neon-gr);
-  background: rgba(0, 255, 136, 0.1);
-  border: 1px solid rgba(0, 255, 136, 0.3);
-  padding: 2px 7px;
-  border-radius: 999px;
-  letter-spacing: 0.5px;
-}
-
-.pkg-live-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--neon-gr);
-  box-shadow: 0 0 6px var(--neon-gr);
-  animation: pulse 1.2s infinite;
+  letter-spacing: 0.08em;
+  text-shadow: 0 0 6px rgba(0, 240, 255, 0.3);
 }
 
 .pkg-desc {
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   color: var(--text-dim);
   margin-top: 3px;
-  line-height: 1.35;
-  font-weight: 400;
 }
 
 .pkg-divider {
   height: 1px;
   background: rgba(0, 240, 255, 0.12);
-  margin-bottom: 0.85rem;
+  margin-bottom: 0.75rem;
 }
 
 .pkg-stats {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 0.6rem;
-}
-
-.pkg-stat-col {
   display: flex;
-  flex-direction: column;
+  gap: 1.25rem;
+  flex-wrap: wrap;
 }
 
 .pkg-stat-label {
-  font-size: 0.64rem;
+  font-size: 0.62rem;
   color: var(--text-dim);
-  letter-spacing: 0.4px;
+  letter-spacing: 1px;
   text-transform: uppercase;
   font-weight: 600;
-  margin-bottom: 2px;
-  white-space: nowrap;
+  display: block;
+  margin-bottom: 3px;
 }
 
 .pkg-stat-value {
-  font-size: 1rem;
+  font-size: 0.95rem;
   font-weight: 700;
   color: var(--neon-cy);
   font-family: var(--font-mono);
-  font-variant-numeric: tabular-nums;
-  transition: all 0.3s ease;
 }
 
-.pkg-stat-sub {
-  font-size: 0.6rem;
-  color: var(--text-mute);
-  margin-top: 2px;
-  letter-spacing: 0.1px;
+.pkg-stat-value.gray {
+  color: var(--text-dim);
 }
 
+.pkg-stat-value.green,
 .pkg-stat-value-green {
   color: var(--neon-gr);
-  text-shadow: 0 0 8px rgba(0, 255, 136, 0.4);
 }
 
+.pkg-stat-value.yellow,
 .pkg-stat-value-yellow {
   color: var(--warn);
-  text-shadow: 0 0 8px rgba(245, 255, 61, 0.4);
 }
 
+.pkg-stat-value.rose,
 .pkg-stat-value-rose {
   color: var(--danger);
-  text-shadow: 0 0 8px rgba(255, 61, 138, 0.4);
-}
-
-.pk-animated-num {
-  display: inline-block;
-  font-variant-numeric: tabular-nums;
 }
 
 /* Progress bar */
 .pkg-progress {
-  margin-top: 0.85rem;
-}
-
-.pkg-progress-track {
-  height: 6px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.08);
-  overflow: hidden;
-  position: relative;
+  margin-top: 0.75rem;
 }
 
 .pkg-progress-bar {
-  height: 100%;
+  height: 5px;
   border-radius: 999px;
   background: linear-gradient(90deg, var(--neon-cy) 0%, var(--neon-mg) 100%);
-  box-shadow: 0 0 10px rgba(0, 240, 255, 0.5);
-  transition: width 1s cubic-bezier(0.34, 1.56, 0.64, 1);
-  position: relative;
+  box-shadow: 0 0 8px rgba(0, 240, 255, 0.5);
+  transition: width 0.6s ease;
 }
 
 .pkg-progress-bar.pkg-progress-green {
-  background: linear-gradient(90deg, var(--neon-cy) 0%, var(--neon-gr) 100%);
-  box-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
+  background: linear-gradient(90deg, var(--neon-gr) 0%, var(--neon-cy) 100%);
+  box-shadow: 0 0 8px rgba(0, 255, 136, 0.45);
 }
 
 .pkg-progress-bar.pkg-progress-yellow {
   background: linear-gradient(90deg, var(--warn) 0%, #d97706 100%);
-  box-shadow: 0 0 10px rgba(245, 255, 61, 0.5);
+  box-shadow: 0 0 8px rgba(245, 255, 61, 0.45);
 }
 
 .pkg-progress-bar.pkg-progress-rose {
   background: linear-gradient(90deg, var(--danger) 0%, #b91c1c 100%);
-  box-shadow: 0 0 12px rgba(255, 61, 138, 0.6);
+  box-shadow: 0 0 8px rgba(255, 61, 138, 0.45);
   animation: pulseGlow 1.4s ease-in-out infinite;
 }
 
-.pkg-progress-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: 0.45rem;
-  font-size: 0.65rem;
+.pkg-progress-text {
+  font-size: 0.62rem;
   color: var(--text-dim);
-}
-
-.pkg-progress-text b {
-  color: #fff;
-}
-
-.pkg-progress-pct {
-  font-weight: 700;
-  color: var(--neon-cy);
-  font-family: var(--font-mono);
+  margin-top: 0.4rem;
+  letter-spacing: 0.3px;
+  font-weight: 600;
 }

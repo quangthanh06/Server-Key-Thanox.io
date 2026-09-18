@@ -1,11 +1,5 @@
-/* Sleek Cyber Dark Tech Background (Matching ServerKey proxyvip theme) */
 .pk-cyber-bg {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  overflow: hidden;
-  z-index: 0;
-  background-color: #060812;
+  display: none;
 }
 
 /* Focused Top Cyan/Sapphire Glow */

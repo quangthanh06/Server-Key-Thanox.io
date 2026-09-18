@@ -1,4 +1,7 @@
-.pk-error-box {
+/* ===========================
+   ERROR (serveripa.proxyvip.click)
+   =========================== */
+.error-box, .pk-error-box {
   display: flex;
   align-items: center;
   gap: 0.6rem;

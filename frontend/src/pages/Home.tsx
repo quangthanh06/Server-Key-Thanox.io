@@ -64,7 +64,7 @@ export function Home() {
   };
 
   const getButtonText = () => {
-    if (state.isLoading) return '⏳ ĐANG XỬ LÝ...';
+    if (state.isLoading) return '⏳ Đang tạo link...';
 
     if (isIpLimitReached) {
       const waitTime = state.stats?.resetFormatted || 'vài tiếng';
@@ -73,7 +73,7 @@ export function Home() {
     
     if (state.status === 'created' || state.status === 'type_selected') {
       const typeLabel = (state.proxyType || 'ipa').toUpperCase();
-      return `⚡ TẠO LINK NHẬN KEY ${typeLabel}`;
+      return `⚡ TẠO LINK NHẬN KEY PROXY ${typeLabel}`;
     }
     if (state.status === 'step1_pending') {
       if (bypassCooldown > 0) {
@@ -93,7 +93,7 @@ export function Home() {
   const isMaintenance = Boolean(state.stats?.maintenanceMode);
 
   return (
-    <div className="pk-wrap">
+    <div className="wrap">
       <Header />
 
       {/* Social Proof: Real-time Online Counter */}
@@ -115,7 +115,7 @@ export function Home() {
           )}
 
           {state.status !== 'key_ready' && (
-            <Card title="Nhận Key Proxy" tag="// HỆ THỐNG GET KEY">
+            <Card title="Nhận Key Miễn Phí" tag="// FREE KEY SYSTEM">
               <LoadingOverlay isLoading={state.isLoading} />
               
               {/* Responsive 4-Step Flow Tracker */}
@@ -260,7 +260,7 @@ export function Home() {
             </Card>
           )}
 
-          <Card title="Trạng Thái Phiên" tag="// THÔNG TIN HỆ THỐNG">
+          <Card title="Thông Tin" tag="// SESSION.INFO">
             <SessionInfo state={state} />
           </Card>
 

@@ -1,9 +1,12 @@
-.pk-loading {
+/* ===========================
+   LOADING (serveripa.proxyvip.click)
+   =========================== */
+.loading-overlay, .pk-loading {
   text-align: center;
   padding: 1.25rem 1rem;
 }
 
-.pk-spinner {
+.spinner, .pk-spinner {
   width: 34px;
   height: 34px;
   border: 2.5px solid rgba(0, 240, 255, 0.2);
@@ -14,8 +17,9 @@
   box-shadow: 0 0 10px rgba(0, 240, 255, 0.3);
 }
 
-.pk-loading-text {
+.loading-text, .pk-loading-text {
   font-size: 0.75rem;
   color: var(--text-dim);
   letter-spacing: 0.05em;
+  font-family: var(--font-mono);
 }

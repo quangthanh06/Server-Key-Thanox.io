@@ -1,45 +1,39 @@
-.pk-card {
+/* ===========================
+   CARD (serveripa.proxyvip.click)
+   =========================== */
+.card, .pk-card {
   background: var(--card-bg);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: var(--radius);
-  padding: var(--card-padding);
-  box-shadow: 
-    0 24px 48px -12px rgba(0, 0, 0, 0.65),
-    0 0 0 1px rgba(255, 255, 255, 0.04),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--border-cy);
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 0 30px rgba(0, 240, 255, 0.08), inset 0 0 20px rgba(0, 240, 255, 0.03);
   position: relative;
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  overflow: hidden;
+  backdrop-filter: blur(8px);
   animation: scalein 0.35s ease;
   box-sizing: border-box;
 }
 
-.pk-card-header {
+.card-title, .pk-card-title {
+  font-family: var(--font-brand);
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: #fff;
+  letter-spacing: 0.06em;
+  margin-bottom: 1.25rem;
   display: flex;
   align-items: center;
-  gap: 0.65rem;
-  margin-bottom: 1.25rem;
-  flex-wrap: wrap;
+  gap: 0.6rem;
 }
 
-.pk-card-title {
-  font-family: var(--font-heading);
-  font-weight: 700;
-  font-size: 1.15rem;
-  color: #fff;
-  letter-spacing: -0.01em;
-}
-
-.pk-card-tag {
+.card-title .tag, .pk-card-tag {
   font-family: var(--font-mono);
-  font-size: 0.68rem;
-  font-weight: 600;
+  font-size: 0.65rem;
   color: var(--neon-cy);
-  background: rgba(0, 240, 255, 0.08);
-  padding: 3px 9px;
-  border-radius: 6px;
-  letter-spacing: 0.06em;
-  border: 1px solid rgba(0, 240, 255, 0.25);
-  white-space: nowrap;
-  flex-shrink: 0;
+  background: rgba(0, 240, 255, 0.1);
+  padding: 2px 8px;
+  border-radius: 3px;
+  letter-spacing: 0.08em;
+  border: 1px solid var(--border-dim);
 }

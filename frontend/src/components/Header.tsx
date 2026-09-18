@@ -2,15 +2,14 @@ import './Header.css';
 
 export function Header() {
   return (
-    <header className="pk-header">
-      <div className="pk-brand">
-        <span className="pk-pulse"></span>
-        <span className="pk-brand-text">THANOX STORE • VIP PROXY</span>
+    <div className="logo-wrap">
+      <div className="brand">
+        <span className="pulse"></span> //PROXY VIP VN V2
       </div>
-      <h1 className="pk-title">THANOX STORE</h1>
-      <p className="pk-subtitle">
-        Hệ thống nhận Key Proxy Tự Động • Free Fire iOS
-      </p>
-    </header>
+      <div className="logo-title">SERVERKEY</div>
+      <div className="logo-sub">
+        Hệ thống nhận key miễn phí — Free Fire iOS
+      </div>
+    </div>
   );
 }

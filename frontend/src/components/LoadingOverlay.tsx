@@ -9,9 +9,9 @@ export function LoadingOverlay({ isLoading, text }: LoadingOverlayProps) {
   if (!isLoading) return null;
 
   return (
-    <div className="pk-loading">
-      <div className="pk-spinner"></div>
-      <div className="pk-loading-text">{text || 'Đang xử lý...'}</div>
+    <div id="loadingBox" className="loading-overlay show">
+      <div className="spinner"></div>
+      <div className="loading-text">{text || 'Đang khởi tạo link...'}</div>
     </div>
   );
 }

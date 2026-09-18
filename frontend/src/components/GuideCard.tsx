@@ -63,10 +63,10 @@ export function GuideCard({
   const videoSource = useMemo(() => parseVideoSource(rawUrl), [rawUrl]);
 
   return (
-    <div className="pk-card pk-guide-card">
-      <div className="pk-card-header">
-        <span className="pk-card-tag">// HƯỚNG DẪN CHI TIẾT</span>
-        <span className="pk-card-title">Cách Kích Hoạt Key</span>
+    <div className="card pk-guide-card">
+      <div className="card-title">
+        <span className="tag">// HƯỚNG DẪN</span>
+        Cách Kích Hoạt Key
       </div>
 
       <div className="pk-guide-tabs">

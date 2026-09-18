@@ -1,38 +1,32 @@
-.pk-footer {
+/* ===========================
+   FOOTER (serveripa.proxyvip.click)
+   =========================== */
+.footer {
   text-align: center;
-  font-size: 0.72rem;
+  font-size: 0.65rem;
   color: var(--text-mute);
-  letter-spacing: 0.3px;
-  padding: 1rem 0 2rem;
+  margin-top: 1.25rem;
+  margin-bottom: 1.5rem;
+  letter-spacing: 0.5px;
   user-select: none;
-  font-family: var(--font-main);
+  font-family: var(--font-mono);
 }
 
-.pk-footer-content {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
-
-.pk-footer-admin-link {
-  color: var(--text-dim);
-  cursor: pointer;
-  padding: 0.2rem 0.4rem;
-  border-radius: 4px;
-  transition: all 0.25s ease;
-  outline: none;
-}
-
-.pk-footer-admin-link:hover,
-.pk-footer-admin-link:focus-visible {
-  color: var(--neon-cy);
-  background: rgba(0, 240, 255, 0.08);
-  text-shadow: 0 0 10px rgba(0, 240, 255, 0.6);
-}
-
-.pk-footer-dot {
+.footer span {
   color: var(--text-mute);
-  opacity: 0.6;
+  transition: color 0.2s;
+}
+
+.footer span:hover {
+  color: var(--neon-cy);
+}
+
+.footer a {
+  color: var(--neon-cy);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.footer a:hover {
+  color: var(--neon-mg);
 }

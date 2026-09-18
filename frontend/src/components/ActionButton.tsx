@@ -11,21 +11,22 @@ interface ActionButtonProps {
 
 export function ActionButton({ onClick, disabled, isLoading, proxyType, textOverride }: ActionButtonProps) {
   const getText = () => {
-    if (isLoading) return '⏳ ĐANG XỬ LÝ...';
+    if (isLoading) return '⏳ Đang tạo link...';
     if (textOverride) return textOverride;
     if (proxyType === 'ipa') return '⚡ TẠO LINK NHẬN KEY PROXY IPA';
     if (proxyType === 'vpn') return '⚡ TẠO LINK NHẬN KEY PROXY VPN';
-    return '⚡ CHỌN LOẠI PROXY';
+    return '⚡ TẠO LINK NHẬN KEY PROXY IPA';
   };
 
   return (
     <button 
-      className="pk-action-btn"
+      type="button"
+      className="btn-main"
+      id="getBtn"
       onClick={onClick}
       disabled={disabled || isLoading}
     >
-      <span className="pk-action-btn-text">{getText()}</span>
-      <div className="pk-action-btn-glow"></div>
+      {getText()}
     </button>
   );
 }

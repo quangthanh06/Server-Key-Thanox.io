@@ -1,33 +1,30 @@
-.pk-steps {
+/* ===========================
+   STEPS ROW (serveripa.proxyvip.click)
+   =========================== */
+.steps, .pk-steps {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 0.25rem;
+  gap: 0.5rem;
   margin-bottom: 1.25rem;
-  padding: 0.6rem 0.75rem;
-  background: rgba(5, 7, 18, 0.7);
-  border: 1px solid rgba(0, 240, 255, 0.15);
-  border-radius: 10px;
-  width: 100%;
-  box-sizing: border-box;
+  flex-wrap: wrap;
 }
 
-.pk-step {
+.step, .pk-step {
   display: flex;
   align-items: center;
   gap: 0.4rem;
-  font-size: 0.72rem;
-  color: var(--text-mute);
-  font-family: var(--font-main);
-  transition: all 0.25s ease;
-  min-width: 0;
-  flex: 1;
-  justify-content: center;
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  transition: color 0.3s;
 }
 
-.pk-step-num {
-  width: 19px;
-  height: 19px;
+.step-checked, .pk-step-checked {
+  color: var(--neon-gr);
+}
+
+.step-num, .pk-step-num {
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
   border: 1.5px solid currentColor;
   display: flex;
@@ -35,56 +32,25 @@
   justify-content: center;
   font-size: 0.62rem;
   font-weight: 700;
-  font-family: var(--font-mono);
-  flex-shrink: 0;
-  transition: all 0.25s ease;
-}
-
-.pk-step-text {
-  font-weight: 600;
-  letter-spacing: 0.01em;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.pk-step-arrow {
-  color: var(--text-mute);
-  font-size: 0.85rem;
-  opacity: 0.35;
-  user-select: none;
   flex-shrink: 0;
 }
 
-/* Active step */
-.pk-step.pk-step-active {
-  color: var(--neon-cy);
-}
-
-.pk-step.pk-step-active .pk-step-num {
-  border-color: var(--neon-cy);
-  background: rgba(0, 240, 255, 0.15);
-  box-shadow: 0 0 8px rgba(0, 240, 255, 0.6);
-  color: #fff;
-}
-
-.pk-step.pk-step-active .pk-step-text {
-  color: #fff;
-  font-weight: 700;
-  text-shadow: 0 0 6px rgba(0, 240, 255, 0.5);
-}
-
-/* Checked step */
-.pk-step.pk-step-checked {
-  color: var(--neon-gr);
-}
-
-.pk-step.pk-step-checked .pk-step-num {
+.step-checked .step-num, .pk-step-checked .pk-step-num {
   background: var(--neon-gr);
   border-color: var(--neon-gr);
-  color: #05060d;
-  box-shadow: 0 0 8px rgba(0, 255, 136, 0.5);
+  color: #000;
+  box-shadow: 0 0 10px rgba(0, 255, 136, 0.6);
   font-weight: 900;
+}
+
+.step-arrow, .pk-step-arrow {
+  color: var(--text-mute);
+  font-size: 0.9rem;
+}
+
+.step-text {
+  font-weight: 600;
+  font-size: 0.75rem;
 }
 
 .pk-step.pk-step-checked .pk-step-text {

@@ -6,21 +6,18 @@ export function Footer() {
   };
 
   return (
-    <footer className="pk-footer">
-      <div className="pk-footer-content">
-        <span 
-          className="pk-footer-admin-link"
-          onClick={handleAdminClick}
-          title="Quản trị viên"
-          role="button"
-          tabIndex={0}
-          onKeyDown={(e) => e.key === 'Enter' && handleAdminClick()}
-        >
-          © 2026 THANOX STORE
-        </span>
-        <span className="pk-footer-dot">•</span>
-        <span>Hệ Thống Nhận Key Proxy Miễn Phí</span>
-      </div>
-    </footer>
+    <div className="footer">
+      <span 
+        onClick={handleAdminClick} 
+        style={{ cursor: 'pointer' }}
+        title="Admin Panel"
+      >
+        //SERVERKEY • v2.4
+      </span>
+      &nbsp;|&nbsp;
+      <a href="https://dtnshop.io.vn/" target="_blank" rel="noopener noreferrer">
+        PROXYVIPVN
+      </a>
+    </div>
   );
 }

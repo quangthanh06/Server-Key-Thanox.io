@@ -1,93 +1,49 @@
-.pk-header {
+/* ===========================
+   LOGO / BRAND (serveripa.proxyvip.click)
+   =========================== */
+.logo-wrap {
   text-align: center;
-  margin-bottom: 0.5rem;
-  animation: fadein 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  margin-bottom: 1.5rem;
+  animation: fadein 0.4s ease;
 }
 
-.pk-brand {
+.brand {
   display: inline-flex;
   align-items: center;
-  gap: 0.55rem;
-  font-family: var(--font-heading);
-  font-weight: 700;
-  color: var(--neon-cy);
-  font-size: 0.76rem;
-  letter-spacing: 0.08em;
-  padding: 0.35rem 0.95rem;
-  background: rgba(0, 240, 255, 0.08);
-  border: 1px solid rgba(0, 240, 255, 0.25);
-  border-radius: 999px;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  text-shadow: 0 0 10px rgba(0, 240, 255, 0.4);
-}
-
-.pk-pulse {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--neon-gr);
-  box-shadow: 0 0 8px var(--neon-gr), 0 0 14px var(--neon-gr);
-  animation: pulse 1.5s infinite;
-}
-
-@keyframes rainbowFlow {
-  0% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
-  }
-  100% {
-    background-position: 0% 50%;
-  }
-}
-
-@keyframes glowPulse {
-  0%, 100% {
-    filter: drop-shadow(0 0 12px rgba(0, 240, 255, 0.45));
-  }
-  50% {
-    filter: drop-shadow(0 0 22px rgba(255, 0, 123, 0.55));
-  }
-}
-
-.pk-brand-text {
-  font-family: var(--font-heading);
-  text-transform: uppercase;
-  background: linear-gradient(90deg, #00f0ff, #f5ff3d, #00ff88, #00f0ff);
-  background-size: 200% auto;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  animation: rainbowFlow 4s linear infinite;
-  font-weight: 800;
-}
-
-.pk-title {
-  font-family: var(--font-heading);
+  gap: 0.6rem;
+  font-family: var(--font-brand);
   font-weight: 900;
-  font-size: 2.15rem;
-  letter-spacing: -0.01em;
-  margin: 0.75rem 0 0.35rem;
-  background: linear-gradient(
-    90deg,
-    #00f0ff 0%,
-    #7000ff 20%,
-    #ff007b 40%,
-    #f5ff3d 65%,
-    #00ff88 85%,
-    #00f0ff 100%
-  );
-  background-size: 300% auto;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  animation: rainbowFlow 6s linear infinite, glowPulse 3s ease-in-out infinite;
+  color: var(--neon-cy);
+  font-size: 0.95rem;
+  letter-spacing: 0.1em;
+  text-shadow: 0 0 8px rgba(0, 240, 255, 0.6);
 }
 
-.pk-subtitle {
-  font-size: 0.84rem;
+.brand .pulse {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--neon-mg);
+  box-shadow: 0 0 8px var(--neon-mg), 0 0 16px var(--neon-mg);
+  animation: pulse 1.4s infinite;
+}
+
+.logo-title {
+  font-family: var(--font-brand);
+  font-weight: 700;
+  font-size: 1.5rem;
+  color: #fff;
+  letter-spacing: 0.06em;
+  text-shadow: 0 0 12px rgba(0, 240, 255, 0.5);
+  margin: 0.75rem 0 0.2rem;
+}
+
+.logo-sub {
+  font-size: 0.72rem;
   color: var(--text-dim);
-  letter-spacing: 0.01em;
-  font-weight: 500;
-  margin: 0;
+  letter-spacing: 0.05em;
+}
+
+.logo-sub b {
+  color: var(--neon-yl);
 }
