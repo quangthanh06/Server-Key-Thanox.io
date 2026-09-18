@@ -202,6 +202,18 @@ function DashboardTab({ token, onAuthError }: { token: string; onAuthError: () =
                 <td style={{ color: '#00ff88' }}>{settings.admin_zalo || '0889696810'}</td>
               </tr>
               <tr>
+                <td>Link Tải IPA Free Fire</td>
+                <td style={{ maxWidth: 300, overflow: 'hidden', textOverflow: 'ellipsis' }}>{settings.download_ipa_url || '(Mặc định Telegram)'}</td>
+              </tr>
+              <tr>
+                <td>Giọng Nói Chào Mừng</td>
+                <td><span className={`admin-badge ${settings.welcome_voice_enabled === 'false' ? 'expired' : 'key_ready'}`}>{settings.welcome_voice_enabled === 'false' ? 'TẮT' : 'BẬT (Tự đọc)'}</span></td>
+              </tr>
+              <tr>
+                <td>Nhạc Nền Chill</td>
+                <td><span className={`admin-badge ${settings.bg_music_enabled === 'false' ? 'expired' : 'key_ready'}`}>{settings.bg_music_enabled === 'false' ? 'TẮT' : 'BẬT'}</span></td>
+              </tr>
+              <tr>
                 <td>Giới Hạn Hệ Thống / Ngày</td>
                 <td>{settings.daily_global_limit || '3000'} lượt</td>
               </tr>
@@ -325,6 +337,81 @@ function SettingsTab({ token, onAuthError }: { token: string; onAuthError: () =>
             placeholder="Dán link YouTube hoặc link video MP4"
           />
           <div className="admin-field-hint">Video này sẽ hiển thị trực tiếp khi khách bấm vào tab VPN Shadowrocket.</div>
+        </div>
+      </div>
+
+      <div className="admin-section">
+        <div className="admin-section-title">
+          <span className="tag">// DOWNLOAD</span> Nút Tải Trực Tiếp IPA & Shadowrocket
+        </div>
+        <div className="admin-field">
+          <label className="admin-field-label">Link Tải File IPA Free Fire Tweak</label>
+          <input
+            className="admin-input"
+            value={settings.download_ipa_url || ''}
+            onChange={(e) => handleChange('download_ipa_url', e.target.value)}
+            placeholder="Link Mediafire, Google Drive, Telegram tải file IPA Free Fire"
+          />
+          <div className="admin-field-hint">Khi khách bấm nút "⚡ TẢI BẢN IPA FREE FIRE TWEAK", sẽ mở link này.</div>
+        </div>
+        <div className="admin-field">
+          <label className="admin-field-label">Link Tải Shadowrocket (VPN)</label>
+          <input
+            className="admin-input"
+            value={settings.download_shadowrocket_url || ''}
+            onChange={(e) => handleChange('download_shadowrocket_url', e.target.value)}
+            placeholder="Link App Store hoặc file IPA Shadowrocket"
+          />
+        </div>
+      </div>
+
+      <div className="admin-section">
+        <div className="admin-section-title">
+          <span className="tag">// VOICE & MUSIC</span> Giọng Nói AI Hướng Dẫn & Nhạc Nền
+        </div>
+        <div className="admin-field">
+          <label className="admin-field-label">Bật Giọng Đọc AI Chào Mừng</label>
+          <select
+            className="admin-input"
+            value={settings.welcome_voice_enabled || 'true'}
+            onChange={(e) => handleChange('welcome_voice_enabled', e.target.value)}
+          >
+            <option value="true">Bật — Tự động đọc lời chào tiếng Việt khi khách vào web</option>
+            <option value="false">Tắt — Không đọc giọng nói</option>
+          </select>
+        </div>
+        <div className="admin-field">
+          <label className="admin-field-label">Lời Thoại Giọng Đọc (Bạn tự ghi chữ, AI sẽ đọc theo)</label>
+          <textarea
+            className="admin-input"
+            rows={3}
+            value={settings.welcome_voice_text || ''}
+            onChange={(e) => handleChange('welcome_voice_text', e.target.value)}
+            placeholder="Chào mừng các con vợ đã đến với THANOX STORE. Khách mới vào app vui lòng làm theo 2 bước bên trên để nhận key proxy xịn sò. Cách cài đặt và video hướng dẫn chi tiết ở ngay bên dưới nhé. Sau đây mời các con vợ cùng thưởng thức âm nhạc!"
+            style={{ resize: 'vertical' }}
+          />
+          <div className="admin-field-hint">Ghi chữ tiếng Việt có dấu để AI phát âm chuẩn và tự nhiên nhất.</div>
+        </div>
+        <div className="admin-field">
+          <label className="admin-field-label">Bật Nhạc Nền Chill (Tự phát sau khi giọng đọc xong)</label>
+          <select
+            className="admin-input"
+            value={settings.bg_music_enabled || 'true'}
+            onChange={(e) => handleChange('bg_music_enabled', e.target.value)}
+          >
+            <option value="true">Bật — Tự phát nhạc nền chill</option>
+            <option value="false">Tắt — Không phát nhạc</option>
+          </select>
+        </div>
+        <div className="admin-field">
+          <label className="admin-field-label">Link File Nhạc MP3 Nền</label>
+          <input
+            className="admin-input"
+            value={settings.bg_music_url || ''}
+            onChange={(e) => handleChange('bg_music_url', e.target.value)}
+            placeholder="Dán link file .mp3 trực tiếp (để trống nếu dùng nhạc chill mặc định)"
+          />
+          <div className="admin-field-hint">Nhạc sẽ tự động vang lên ngay sau câu kết thúc của giọng đọc!</div>
         </div>
       </div>
 

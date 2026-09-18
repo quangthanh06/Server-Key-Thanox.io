@@ -4,6 +4,8 @@ import './GuideCard.css';
 interface GuideCardProps {
   videoIpaUrl?: string | null;
   videoVpnUrl?: string | null;
+  downloadIpaUrl?: string | null;
+  downloadShadowrocketUrl?: string | null;
 }
 
 function parseVideoSource(rawUrl?: string | null): { type: 'youtube' | 'video' | 'link'; url: string } | null {
@@ -33,7 +35,12 @@ function parseVideoSource(rawUrl?: string | null): { type: 'youtube' | 'video' |
   };
 }
 
-export function GuideCard({ videoIpaUrl, videoVpnUrl }: GuideCardProps) {
+export function GuideCard({ 
+  videoIpaUrl, 
+  videoVpnUrl,
+  downloadIpaUrl,
+  downloadShadowrocketUrl
+}: GuideCardProps) {
   const [activeTab, setActiveTab] = useState<'ipa' | 'vpn'>('ipa');
 
   // Read local settings fallback
@@ -49,6 +56,9 @@ export function GuideCard({ videoIpaUrl, videoVpnUrl }: GuideCardProps) {
   const rawUrl = activeTab === 'ipa' 
     ? (videoIpaUrl || localSettings.guide_video_ipa || null)
     : (videoVpnUrl || localSettings.guide_video_vpn || null);
+
+  const ipaLink = downloadIpaUrl || localSettings.download_ipa_url || 'https://t.me/thanoxstore';
+  const shadowrocketLink = downloadShadowrocketUrl || localSettings.download_shadowrocket_url || 'https://apps.apple.com/app/shadowrocket/id932747118';
 
   const videoSource = useMemo(() => parseVideoSource(rawUrl), [rawUrl]);
 
@@ -117,53 +127,96 @@ export function GuideCard({ videoIpaUrl, videoVpnUrl }: GuideCardProps) {
       )}
 
       {activeTab === 'ipa' ? (
-        <div className="pk-guide-list">
-          <div className="pk-guide-item">
-            <div className="pk-guide-num">1</div>
-            <div className="pk-guide-content">
-              <strong>Cài đặt bản IPA Free Fire:</strong>
-              <p>Tải và cài đặt file IPA Free Fire kèm Tweak qua các công cụ ký chứng chỉ uy tín như <b>TrollStore, Scarlet, Esign</b> hoặc Sideloadly.</p>
+        <>
+          {/* Nút Tải Trực Tiếp IPA */}
+          <div className="pk-download-group">
+            <a 
+              href={ipaLink} 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="pk-download-btn pk-download-btn-ipa"
+            >
+              <span className="pk-download-title">⚡ TẢI BẢN IPA FREE FIRE TWEAK</span>
+              <span className="pk-download-sub">Bản Chuẩn VIP • Cài Qua TrollStore / Scarlet / Esign ⬇️</span>
+            </a>
+
+            <div className="pk-download-tools-row">
+              <span className="pk-tools-tag">Công cụ ký IPA:</span>
+              <a href="https://trollstore.app" target="_blank" rel="noopener noreferrer" className="pk-download-tool-pill">
+                📦 TrollStore
+              </a>
+              <a href="https://usescarlet.com" target="_blank" rel="noopener noreferrer" className="pk-download-tool-pill">
+                📱 Scarlet
+              </a>
+              <a href="https://esign.yyyue.xyz" target="_blank" rel="noopener noreferrer" className="pk-download-tool-pill">
+                ✍️ Esign
+              </a>
             </div>
           </div>
-          <div className="pk-guide-item">
-            <div className="pk-guide-num">2</div>
-            <div className="pk-guide-content">
-              <strong>Vượt link lấy mã Key:</strong>
-              <p>Hoàn thành Bước 1 và Bước 2 trên THANOX STORE để được cấp mã <b>Key Proxy IPA 24 Giờ</b>.</p>
+
+          <div className="pk-guide-list">
+            <div className="pk-guide-item">
+              <div className="pk-guide-num">1</div>
+              <div className="pk-guide-content">
+                <strong>Cài đặt bản IPA Free Fire:</strong>
+                <p>Bấm nút <b>Tải Bản IPA</b> ở trên để tải file game kèm Tweak về máy, sau đó ký chứng chỉ cài đặt qua <b>TrollStore, Scarlet hoặc Esign</b>.</p>
+              </div>
+            </div>
+            <div className="pk-guide-item">
+              <div className="pk-guide-num">2</div>
+              <div className="pk-guide-content">
+                <strong>Vượt link lấy mã Key:</strong>
+                <p>Hoàn thành Bước 1 và Bước 2 trên THANOX STORE để được cấp mã <b>Key Proxy IPA 24 Giờ</b>.</p>
+              </div>
+            </div>
+            <div className="pk-guide-item">
+              <div className="pk-guide-num">3</div>
+              <div className="pk-guide-content">
+                <strong>Dán key kích hoạt trong game:</strong>
+                <p>Mở Free Fire, chạm vào biểu tượng Menu Tweak hiển thị trên màn hình → Dán mã Key vừa sao chép → Nhấn <b>Kích Hoạt</b> để bắt đầu chơi.</p>
+              </div>
             </div>
           </div>
-          <div className="pk-guide-item">
-            <div className="pk-guide-num">3</div>
-            <div className="pk-guide-content">
-              <strong>Dán key kích hoạt trong game:</strong>
-              <p>Mở Free Fire, chạm vào biểu tượng Menu Tweak hiển thị trên màn hình → Dán mã Key vừa sao chép → Nhấn <b>Kích Hoạt</b> để bắt đầu chơi.</p>
-            </div>
-          </div>
-        </div>
+        </>
       ) : (
-        <div className="pk-guide-list">
-          <div className="pk-guide-item">
-            <div className="pk-guide-num">1</div>
-            <div className="pk-guide-content">
-              <strong>Tải ứng dụng Proxy:</strong>
-              <p>Cài đặt ứng dụng <b>Shadowrocket</b>, <b>V2Ray</b> hoặc Karing trên App Store hoặc TestFlight.</p>
+        <>
+          {/* Nút Tải Trực Tiếp Shadowrocket */}
+          <div className="pk-download-group">
+            <a 
+              href={shadowrocketLink} 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="pk-download-btn pk-download-btn-vpn"
+            >
+              <span className="pk-download-title">🛡️ TẢI SHADOWROCKET TRÊN APP STORE</span>
+              <span className="pk-download-sub">Ứng Dụng Proxy VPN Chuẩn iOS Tốc Độ Cao ⬇️</span>
+            </a>
+          </div>
+
+          <div className="pk-guide-list">
+            <div className="pk-guide-item">
+              <div className="pk-guide-num">1</div>
+              <div className="pk-guide-content">
+                <strong>Tải ứng dụng Proxy:</strong>
+                <p>Cài đặt ứng dụng <b>Shadowrocket</b>, <b>V2Ray</b> hoặc Karing trên App Store hoặc TestFlight.</p>
+              </div>
+            </div>
+            <div className="pk-guide-item">
+              <div className="pk-guide-num">2</div>
+              <div className="pk-guide-content">
+                <strong>Lấy Key Proxy VPN 24 Giờ:</strong>
+                <p>Thực hiện vượt 2 bước trên hệ thống để nhận mã Key bản quyền VPN tốc độ cao.</p>
+              </div>
+            </div>
+            <div className="pk-guide-item">
+              <div className="pk-guide-num">3</div>
+              <div className="pk-guide-content">
+                <strong>Cấu hình & Kết nối:</strong>
+                <p>Mở Shadowrocket → Thêm máy chủ Proxy VIP → Dán mã Key vào ô <b>Password / Token</b> → Gạt công tắc BẬT VPN và vào game chiến mượt mà.</p>
+              </div>
             </div>
           </div>
-          <div className="pk-guide-item">
-            <div className="pk-guide-num">2</div>
-            <div className="pk-guide-content">
-              <strong>Lấy Key Proxy VPN 24 Giờ:</strong>
-              <p>Thực hiện vượt 2 bước trên hệ thống để nhận mã Key bản quyền VPN tốc độ cao.</p>
-            </div>
-          </div>
-          <div className="pk-guide-item">
-            <div className="pk-guide-num">3</div>
-            <div className="pk-guide-content">
-              <strong>Cấu hình & Kết nối:</strong>
-              <p>Mở Shadowrocket → Thêm máy chủ Proxy VIP → Dán mã Key vào ô <b>Password / Token</b> → Gạt công tắc BẬT VPN và vào game chiến mượt mà.</p>
-            </div>
-          </div>
-        </div>
+        </>
       )}
     </div>
   );

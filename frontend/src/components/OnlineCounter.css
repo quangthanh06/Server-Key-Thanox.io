@@ -1,0 +1,65 @@
+﻿.pk-online-counter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.5rem 0.85rem;
+  background: rgba(5, 10, 24, 0.7);
+  border: 1px solid rgba(0, 255, 136, 0.22);
+  border-radius: 999px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 0 16px rgba(0, 255, 136, 0.08);
+  font-size: 0.73rem;
+  animation: fadein 0.4s ease;
+  margin-bottom: 0.25rem;
+}
+
+.pk-online-left {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: #e2e8f0;
+}
+
+.pk-online-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #00ff88;
+  box-shadow: 0 0 10px #00ff88, 0 0 16px #00ff88;
+  animation: pulse 1.4s infinite;
+  flex-shrink: 0;
+}
+
+.pk-online-text b {
+  color: #00ff88;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 0.8rem;
+}
+
+.pk-online-badge {
+  font-size: 0.68rem;
+  color: var(--text-dim);
+  background: rgba(255, 255, 255, 0.05);
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  white-space: nowrap;
+}
+
+.pk-online-badge b {
+  color: var(--neon-yl);
+  font-family: var(--font-mono);
+}
+
+@media (max-width: 420px) {
+  .pk-online-counter {
+    font-size: 0.68rem;
+    padding: 0.45rem 0.7rem;
+  }
+  .pk-online-badge {
+    display: none;
+  }
+}

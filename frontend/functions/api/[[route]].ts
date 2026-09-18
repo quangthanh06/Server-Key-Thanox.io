@@ -13,7 +13,13 @@ const globalSettings: Record<string, string> = {
   site_title: 'GET.KEY // THANOX STORE',
   announcement: '',
   maintenance_mode: 'false',
-  admin_password: 'admin'
+  admin_password: 'admin',
+  download_ipa_url: '',
+  download_shadowrocket_url: '',
+  welcome_voice_enabled: 'true',
+  welcome_voice_text: '',
+  bg_music_enabled: 'true',
+  bg_music_url: ''
 };
 
 const adminTokens = new Set<string>(['admin', 'admin123', 'Quangthanh6810@']);
@@ -195,7 +201,13 @@ export async function onRequest(context: { request: Request; env: any }) {
           adminZalo: globalSettings.admin_zalo || '0889696810',
           supportLink: globalSettings.support_link || null,
           brandName: globalSettings.brand_name || 'THANOX STORE',
-          siteTitle: globalSettings.site_title || 'GET.KEY // THANOX STORE'
+          siteTitle: globalSettings.site_title || 'GET.KEY // THANOX STORE',
+          downloadIpaUrl: globalSettings.download_ipa_url || null,
+          downloadShadowrocketUrl: globalSettings.download_shadowrocket_url || null,
+          welcomeVoiceEnabled: globalSettings.welcome_voice_enabled !== 'false',
+          welcomeVoiceText: globalSettings.welcome_voice_text || null,
+          bgMusicEnabled: globalSettings.bg_music_enabled !== 'false',
+          bgMusicUrl: globalSettings.bg_music_url || null
         },
         error: null
       }), { headers: corsHeaders });
