@@ -34,6 +34,14 @@ export interface SystemStats {
   resetSeconds?: number;
   resetFormatted?: string;
   resetAt?: string;
+  guideVideoIpa?: string | null;
+  guideVideoVpn?: string | null;
+  step1BypassUrl?: string | null;
+  step1Passcode?: string | null;
+  adminZalo?: string | null;
+  supportLink?: string | null;
+  brandName?: string | null;
+  siteTitle?: string | null;
 }
 
 export interface ApiResponse<T = unknown> {

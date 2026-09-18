@@ -13,4 +13,26 @@
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.pk-footer-admin-link {
+  color: var(--text-dim);
+  cursor: pointer;
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+  transition: all 0.25s ease;
+  outline: none;
+}
+
+.pk-footer-admin-link:hover,
+.pk-footer-admin-link:focus-visible {
+  color: var(--neon-cy);
+  background: rgba(0, 240, 255, 0.08);
+  text-shadow: 0 0 10px rgba(0, 240, 255, 0.6);
+}
+
+.pk-footer-dot {
+  color: var(--text-mute);
+  opacity: 0.6;
 }

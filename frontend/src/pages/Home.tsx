@@ -53,6 +53,11 @@ export function Home() {
       // Step 1: Start Link 1 bypass
       actions.startBypass();
     } else if (state.status === 'step1_pending') {
+      const requiredPasscode = state.stats?.step1Passcode?.trim();
+      if (requiredPasscode && passcode.trim() !== requiredPasscode) {
+        alert('Mã xác nhận chưa chính xác! Vui lòng hoàn thành vượt link 1 để lấy mã xác nhận.');
+        return;
+      }
       // Step 1 done: Calls ServerKey (serveripa.proxyvip.click/api/getkey)
       actions.completeStep1AndStartStep2();
     }
@@ -98,7 +103,7 @@ export function Home() {
       
       {/* Maintenance Mode Screen with Admin Zalo */}
       {isMaintenance ? (
-        <MaintenanceScreen zaloPhone="0889696810" />
+        <MaintenanceScreen zaloPhone={state.stats?.adminZalo || '0889696810'} />
       ) : (
         <>
           {/* Limit Reached Notice with Live Countdown */}
@@ -267,7 +272,10 @@ export function Home() {
             <SessionInfo state={state} />
           </Card>
 
-          <GuideCard />
+          <GuideCard 
+            videoIpaUrl={state.stats?.guideVideoIpa} 
+            videoVpnUrl={state.stats?.guideVideoVpn} 
+          />
         </>
       )}
 

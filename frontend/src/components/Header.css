@@ -31,26 +31,61 @@
   animation: pulse 1.5s infinite;
 }
 
+@keyframes rainbowFlow {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes glowPulse {
+  0%, 100% {
+    filter: drop-shadow(0 0 12px rgba(0, 240, 255, 0.45));
+  }
+  50% {
+    filter: drop-shadow(0 0 22px rgba(255, 0, 123, 0.55));
+  }
+}
+
 .pk-brand-text {
   font-family: var(--font-heading);
   text-transform: uppercase;
+  background: linear-gradient(90deg, #00f0ff, #f5ff3d, #00ff88, #00f0ff);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: rainbowFlow 4s linear infinite;
+  font-weight: 800;
 }
 
 .pk-title {
   font-family: var(--font-heading);
-  font-weight: 800;
-  font-size: 1.85rem;
-  color: #fff;
-  letter-spacing: -0.02em;
-  margin: 0.75rem 0 0.3rem;
-  background: linear-gradient(135deg, #ffffff 40%, #cffafe 80%, #67e8f9 100%);
+  font-weight: 900;
+  font-size: 2.15rem;
+  letter-spacing: -0.01em;
+  margin: 0.75rem 0 0.35rem;
+  background: linear-gradient(
+    90deg,
+    #00f0ff 0%,
+    #7000ff 20%,
+    #ff007b 40%,
+    #f5ff3d 65%,
+    #00ff88 85%,
+    #00f0ff 100%
+  );
+  background-size: 300% auto;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  filter: drop-shadow(0 2px 14px rgba(0, 240, 255, 0.25));
+  animation: rainbowFlow 6s linear infinite, glowPulse 3s ease-in-out infinite;
 }
 
 .pk-subtitle {
-  font-size: 0.82rem;
+  font-size: 0.84rem;
   color: var(--text-dim);
   letter-spacing: 0.01em;
   font-weight: 500;

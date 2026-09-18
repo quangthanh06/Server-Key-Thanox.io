@@ -40,6 +40,83 @@
   border: 1px solid rgba(0, 240, 255, 0.3);
 }
 
+/* Video Guide Section */
+.pk-guide-video-block {
+  margin-bottom: 1.25rem;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(0, 240, 255, 0.25);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  animation: fadein 0.35s ease;
+}
+
+.pk-guide-video-header {
+  padding: 0.6rem 0.85rem;
+  background: linear-gradient(90deg, rgba(0, 240, 255, 0.12) 0%, rgba(138, 43, 226, 0.08) 100%);
+  border-bottom: 1px solid rgba(0, 240, 255, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.pk-video-badge {
+  font-family: var(--font-heading);
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--neon-cy);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  letter-spacing: 0.04em;
+}
+
+.pk-video-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #ff0055;
+  box-shadow: 0 0 8px #ff0055;
+  animation: pulse 1.2s infinite;
+}
+
+.pk-video-responsive {
+  position: relative;
+  width: 100%;
+  padding-bottom: 56.25%; /* 16:9 Aspect Ratio */
+  height: 0;
+  background: #000;
+}
+
+.pk-video-responsive iframe,
+.pk-video-responsive video {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+.pk-video-link-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.85rem 1rem;
+  color: var(--neon-cy);
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 0.8rem;
+  text-decoration: none;
+  background: rgba(0, 240, 255, 0.08);
+  transition: all 0.2s ease;
+}
+
+.pk-video-link-btn:hover {
+  background: rgba(0, 240, 255, 0.18);
+  color: #fff;
+}
+
 .pk-guide-list {
   display: flex;
   flex-direction: column;

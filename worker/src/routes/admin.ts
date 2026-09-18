@@ -78,9 +78,10 @@ router.put('/admin/settings', adminAuth(), async (c) => {
     
     // Validate known setting keys
     const allowedKeys = [
-      'step1_bypass_url', 'daily_global_limit', 'daily_ip_limit',
+      'step1_bypass_url', 'step1_passcode', 'daily_global_limit', 'daily_ip_limit',
       'key_duration', 'brand_name', 'site_title',
-      'announcement', 'maintenance_mode', 'admin_password'
+      'announcement', 'maintenance_mode', 'admin_password',
+      'guide_video_ipa', 'guide_video_vpn', 'admin_zalo', 'support_link'
     ];
     
     const updates: Record<string, string> = {};

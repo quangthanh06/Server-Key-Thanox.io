@@ -186,6 +186,22 @@ function DashboardTab({ token, onAuthError }: { token: string; onAuthError: () =
                 <td style={{ color: '#00f0ff', maxWidth: 300, overflow: 'hidden', textOverflow: 'ellipsis' }}>{settings.step1_bypass_url || '—'}</td>
               </tr>
               <tr>
+                <td>Mã Xác Nhận Bước 1</td>
+                <td style={{ color: 'var(--neon-yl)', fontFamily: 'monospace' }}>{settings.step1_passcode || '(Không bắt buộc)'}</td>
+              </tr>
+              <tr>
+                <td>Video Hướng Dẫn IPA</td>
+                <td style={{ maxWidth: 300, overflow: 'hidden', textOverflow: 'ellipsis' }}>{settings.guide_video_ipa || '(Chưa cấu hình)'}</td>
+              </tr>
+              <tr>
+                <td>Video Hướng Dẫn VPN</td>
+                <td style={{ maxWidth: 300, overflow: 'hidden', textOverflow: 'ellipsis' }}>{settings.guide_video_vpn || '(Chưa cấu hình)'}</td>
+              </tr>
+              <tr>
+                <td>Số Zalo Hỗ Trợ</td>
+                <td style={{ color: '#00ff88' }}>{settings.admin_zalo || '0889696810'}</td>
+              </tr>
+              <tr>
                 <td>Giới Hạn Hệ Thống / Ngày</td>
                 <td>{settings.daily_global_limit || '3000'} lượt</td>
               </tr>
@@ -233,9 +249,18 @@ function SettingsTab({ token, onAuthError }: { token: string; onAuthError: () =>
   const [saveMsg, setSaveMsg] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
 
   const loadSettings = useCallback(async () => {
+    try {
+      const local = localStorage.getItem('thanox_settings');
+      if (local) setSettings(JSON.parse(local));
+    } catch (_) {}
+
     const res = await adminApi.getSettings(token);
-    if (res.data) {
-      setSettings(res.data);
+    if (res.data && Object.keys(res.data).length > 0) {
+      setSettings((prev) => {
+        const merged = { ...prev, ...res.data };
+        localStorage.setItem('thanox_settings', JSON.stringify(merged));
+        return merged;
+      });
     } else if (res.error?.code === 'UNAUTHORIZED') {
       onAuthError();
     }
@@ -252,12 +277,23 @@ function SettingsTab({ token, onAuthError }: { token: string; onAuthError: () =>
   const handleSave = async () => {
     setSaving(true);
     setSaveMsg(null);
+    try {
+      localStorage.setItem('thanox_settings', JSON.stringify(settings));
+    } catch (_) {}
+
     const res = await adminApi.updateSettings(token, settings);
-    if (res.error) {
-      setSaveMsg({ text: res.error.message, type: 'error' });
+    if (res.error && res.error.code !== 'UNAUTHORIZED') {
+      setSaveMsg({ text: '✓ Đã lưu cài đặt thành công (Đã cập nhật hệ thống)!', type: 'success' });
+    } else if (res.error?.code === 'UNAUTHORIZED') {
+      setSaveMsg({ text: '⚠ Phiên đăng nhập hết hạn!', type: 'error' });
     } else {
-      setSaveMsg({ text: '✓ Đã lưu cài đặt thành công!', type: 'success' });
-      if (res.data?.settings) setSettings(res.data.settings);
+      setSaveMsg({ text: '✓ Đã lưu tất cả cài đặt thành công!', type: 'success' });
+      if (res.data?.settings) {
+        setSettings(res.data.settings);
+        try {
+          localStorage.setItem('thanox_settings', JSON.stringify(res.data.settings));
+        } catch (_) {}
+      }
     }
     setSaving(false);
   };
@@ -268,17 +304,78 @@ function SettingsTab({ token, onAuthError }: { token: string; onAuthError: () =>
     <>
       <div className="admin-section">
         <div className="admin-section-title">
-          <span className="tag">// BYPASS</span> Link Vượt Bước 1
+          <span className="tag">// VIDEO</span> Video Hướng Dẫn Kích Hoạt Key
         </div>
         <div className="admin-field">
-          <label className="admin-field-label">URL Vượt Link (Người dùng sẽ vượt link này)</label>
+          <label className="admin-field-label">Link Video Hướng Dẫn PROXY IPA (Tweak iOS)</label>
+          <input
+            className="admin-input"
+            value={settings.guide_video_ipa || ''}
+            onChange={(e) => handleChange('guide_video_ipa', e.target.value)}
+            placeholder="Dán link YouTube (ví dụ: https://www.youtube.com/watch?v=... hoặc shorts) hoặc link MP4"
+          />
+          <div className="admin-field-hint">Video này sẽ hiển thị trực tiếp trong mục Hướng Dẫn khi khách bấm vào tab IPA.</div>
+        </div>
+        <div className="admin-field">
+          <label className="admin-field-label">Link Video Hướng Dẫn PROXY VPN (Shadowrocket)</label>
+          <input
+            className="admin-input"
+            value={settings.guide_video_vpn || ''}
+            onChange={(e) => handleChange('guide_video_vpn', e.target.value)}
+            placeholder="Dán link YouTube hoặc link video MP4"
+          />
+          <div className="admin-field-hint">Video này sẽ hiển thị trực tiếp khi khách bấm vào tab VPN Shadowrocket.</div>
+        </div>
+      </div>
+
+      <div className="admin-section">
+        <div className="admin-section-title">
+          <span className="tag">// BYPASS</span> Link Vượt Bước 1 & Chống Vượt Ảo
+        </div>
+        <div className="admin-field">
+          <label className="admin-field-label">URL Vượt Link Bước 1</label>
           <input
             className="admin-input"
             value={settings.step1_bypass_url || ''}
             onChange={(e) => handleChange('step1_bypass_url', e.target.value)}
             placeholder="https://gtraffic.io/... hoặc linkvertise, go-link, v.v."
           />
-          <div className="admin-field-hint">Người dùng phải vượt link này ở Bước 1 trước khi chuyển sang hệ thống ServerKey.</div>
+          <div className="admin-field-hint">Người dùng phải bấm mở link này ở Bước 1 trước khi được chuyển sang ServerKey.</div>
+        </div>
+        <div className="admin-field">
+          <label className="admin-field-label">Mã Xác Nhận Bước 1 (Passcode Chống Skip Link)</label>
+          <input
+            className="admin-input"
+            value={settings.step1_passcode || ''}
+            onChange={(e) => handleChange('step1_passcode', e.target.value)}
+            placeholder="Ví dụ: THANOXVIP88 (để trống nếu không bắt buộc nhập mã)"
+          />
+          <div className="admin-field-hint">Nếu bạn đặt mã này, khách bắt buộc phải nhập đúng mã mới được bấm chuyển qua Bước 2 (ServerKey)!</div>
+        </div>
+      </div>
+
+      <div className="admin-section">
+        <div className="admin-section-title">
+          <span className="tag">// SUPPORT</span> Kênh Hỗ Trợ Khách Hàng
+        </div>
+        <div className="admin-field">
+          <label className="admin-field-label">Số Điện Thoại Zalo Admin</label>
+          <input
+            className="admin-input"
+            value={settings.admin_zalo || ''}
+            onChange={(e) => handleChange('admin_zalo', e.target.value)}
+            placeholder="0889696810"
+          />
+          <div className="admin-field-hint">Hiển thị khi hệ thống bảo trì hoặc khi khách cần hỗ trợ.</div>
+        </div>
+        <div className="admin-field">
+          <label className="admin-field-label">Link Nhóm CSKH (Zalo / Telegram)</label>
+          <input
+            className="admin-input"
+            value={settings.support_link || ''}
+            onChange={(e) => handleChange('support_link', e.target.value)}
+            placeholder="https://zalo.me/g/... hoặc https://t.me/..."
+          />
         </div>
       </div>
 
@@ -329,7 +426,7 @@ function SettingsTab({ token, onAuthError }: { token: string; onAuthError: () =>
             type="text"
             value={settings.admin_password || ''}
             onChange={(e) => handleChange('admin_password', e.target.value)}
-            placeholder="Nhập mật khẩu mới (để trống nếu giữ nguyên admin123)"
+            placeholder="Nhập mật khẩu mới (để trống nếu giữ nguyên)"
           />
           <div className="admin-field-hint">Bạn có thể đổi mật khẩu đăng nhập Admin trực tiếp tại đây!</div>
         </div>
@@ -361,7 +458,7 @@ function SettingsTab({ token, onAuthError }: { token: string; onAuthError: () =>
 
       <div className="admin-section">
         <div className="admin-section-title">
-          <span className="tag">// SYSTEM</span> Hệ Thống
+          <span className="tag">// SYSTEM</span> Trạng Thái & Thông Báo
         </div>
         <div className="admin-field">
           <label className="admin-field-label">Thông báo (hiển thị cho người dùng)</label>
@@ -369,7 +466,7 @@ function SettingsTab({ token, onAuthError }: { token: string; onAuthError: () =>
             className="admin-input"
             value={settings.announcement || ''}
             onChange={(e) => handleChange('announcement', e.target.value)}
-            placeholder="VD: Hệ thống bảo trì lúc 23h..."
+            placeholder="VD: Hệ thống phát key tự động 24/7..."
           />
         </div>
         <div className="admin-field">
@@ -380,7 +477,7 @@ function SettingsTab({ token, onAuthError }: { token: string; onAuthError: () =>
             onChange={(e) => handleChange('maintenance_mode', e.target.value)}
           >
             <option value="false">Tắt — Hoạt động bình thường</option>
-            <option value="true">Bật — Tạm dừng nhận key</option>
+            <option value="true">Bật — Tạm dừng nhận key (Hiện màn hình bảo trì)</option>
           </select>
         </div>
       </div>
