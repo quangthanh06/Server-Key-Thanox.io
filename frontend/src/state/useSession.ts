@@ -65,10 +65,7 @@ export function useSession() {
   };
 
   // STEP 2: Confirms Step 1 is done, then redirects user DIRECTLY to ServerKey page
-  // IMPORTANT: We redirect the user's browser directly to serveripa.proxyvip.click/getkey
-  // so that ServerKey sees the user's REAL IP (not our Cloudflare server IP).
-  // If we proxy the API call through our backend, ServerKey binds the link to Cloudflare's IP,
-  // causing "Link không dành cho thiết bị của bạn" error.
+  // User gets key directly from serveripa.proxyvip.click/getkey — no intermediate screen.
   const completeStep1AndStartStep2 = async () => {
     let sid = state.sessionId;
     if (!sid) {
@@ -87,11 +84,13 @@ export function useSession() {
 
     // Redirect user DIRECTLY to ServerKey page with their own IP
     const serverKeyUrl = 'https://serveripa.proxyvip.click/getkey';
-    
-    dispatch({ type: 'STEP2_STARTED', flowUrl: serverKeyUrl });
     try {
       window.open(serverKeyUrl, '_blank', 'noopener,noreferrer');
     } catch (_) {}
+
+    // Reset flow back to start — user gets key at ServerKey, no notification needed here
+    dispatch({ type: 'RESET_FLOW' });
+    loadStats();
   };
 
   // STEP 3: Confirms Step 2 (ServerKey) is done, and claims the final Key

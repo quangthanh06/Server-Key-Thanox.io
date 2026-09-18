@@ -168,88 +168,17 @@ export function Home() {
                 </>
               )}
 
-              {/* Step 2: Direct ServerKey Notice & Link */}
-              {state.status === 'step2_pending' && state.step2FlowUrl && (
-                <div style={{
-                  marginTop: '1.25rem',
-                  padding: '1.2rem',
-                  background: 'linear-gradient(180deg, rgba(0, 240, 255, 0.08) 0%, rgba(138, 43, 226, 0.08) 100%)',
-                  border: '1px solid var(--border-cy)',
-                  borderRadius: '10px',
-                  textAlign: 'center',
-                  boxShadow: '0 0 20px rgba(0, 240, 255, 0.15)'
-                }}>
-                  <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>🚀</div>
-                  <h3 style={{ fontFamily: 'var(--font-brand)', color: '#fff', fontSize: '1.1rem', margin: '0 0 0.5rem' }}>
-                    ĐÃ CHUYỂN SANG SERVERKEY!
-                  </h3>
-                  <p style={{ fontSize: '0.78rem', color: 'var(--text-dim)', margin: '0 0 1rem', lineHeight: '1.5' }}>
-                    Hệ thống đã kết nối trực tiếp với <b>serveripa.proxyvip.click</b> và tạo link vượt mới nhất.
-                  </p>
 
-                  <div style={{
-                    padding: '0.75rem 1rem',
-                    background: 'rgba(245, 255, 61, 0.08)',
-                    border: '1px dashed rgba(245, 255, 61, 0.4)',
-                    borderRadius: '8px',
-                    color: 'var(--neon-yl)',
-                    fontSize: '0.75rem',
-                    lineHeight: '1.5',
-                    marginBottom: '1.25rem',
-                    textAlign: 'left'
-                  }}>
-                    ⭐ <b>LƯU Ý QUAN TRỌNG:</b>
-                    <br />
-                    Vui lòng hoàn thành link vượt ServerKey bên dưới. <b>Mã Key sẽ hiển thị trực tiếp tại trang web ServerKey</b> để bạn sao chép. Bạn <b>không cần quay lại trang web này nữa!</b>
-                  </div>
-
-                  <a 
-                    href={state.step2FlowUrl} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="pk-action-btn"
-                    style={{ 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      justifyContent: 'center', 
-                      textDecoration: 'none',
-                      fontSize: '0.9rem',
-                      padding: '0.85rem'
-                    }}
-                  >
-                    ⚡ MỞ LINK SERVERKEY ĐỂ LẤY KEY
-                  </a>
-
-                  <button 
-                    type="button" 
-                    onClick={actions.resetFlow}
-                    style={{ 
-                      marginTop: '1rem', 
-                      background: 'transparent', 
-                      border: 'none', 
-                      color: 'var(--text-dim)', 
-                      fontSize: '0.75rem', 
-                      cursor: 'pointer', 
-                      textDecoration: 'underline' 
-                    }}
-                  >
-                    🔄 Nhận thêm lượt khác / Chọn lại
-                  </button>
-                </div>
-              )}
               
               <ErrorBox error={state.error} onDismiss={actions.clearError} />
               
-              {/* Action Button: only shown if not already in Step 2 */}
-              {state.status !== 'step2_pending' && (
-                <ActionButton 
-                  onClick={handleActionClick}
-                  disabled={isActionDisabled}
-                  isLoading={state.isLoading}
-                  proxyType={state.proxyType}
-                  textOverride={getButtonText()}
-                />
-              )}
+              <ActionButton 
+                onClick={handleActionClick}
+                disabled={isActionDisabled}
+                isLoading={state.isLoading}
+                proxyType={state.proxyType}
+                textOverride={getButtonText()}
+              />
             </Card>
           )}
 
