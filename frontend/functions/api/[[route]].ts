@@ -234,11 +234,13 @@ function recordSessionEvent(
     if (oldestKey) activeSessions.delete(oldestKey);
   }
 
+  saveSessionsToCache().catch(() => {});
+
   return key;
 }
 
 let sessionsInitialized = false;
-function ensureInitialSessions() {
+async function ensureInitialSessions() {
   if (!sessionsInitialized) {
     sessionsInitialized = true;
     const now = Date.now();
@@ -259,8 +261,42 @@ function ensureInitialSessions() {
   }
 }
 
+async function loadSessionsFromCache() {
+  try {
+    const cache = (caches as any).default;
+    if (!cache) return;
+    const cacheRes = await cache.match('https://serverkey-thanox.pages.dev/__active_sessions_store__');
+    if (cacheRes) {
+      const data = await cacheRes.json() as [string, LiveSession][];
+      if (Array.isArray(data) && data.length > 0) {
+        for (const [id, sess] of data) {
+          if (!activeSessions.has(id) || (sess.updatedAt > (activeSessions.get(id)?.updatedAt || 0))) {
+            activeSessions.set(id, sess);
+          }
+        }
+      }
+    }
+  } catch (_) {}
+}
+
+async function saveSessionsToCache() {
+  try {
+    const cache = (caches as any).default;
+    if (!cache) return;
+    const entries = Array.from(activeSessions.entries());
+    const res = new Response(JSON.stringify(entries), {
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'public, max-age=86400, s-maxage=86400'
+      }
+    });
+    await cache.put('https://serverkey-thanox.pages.dev/__active_sessions_store__', res);
+  } catch (_) {}
+}
+
 export async function onRequest(context: { request: Request; env: any }) {
-  ensureInitialSessions();
+  await ensureInitialSessions();
+  await loadSessionsFromCache();
   const { request } = context;
   const url = new URL(request.url);
   const path = url.pathname;
