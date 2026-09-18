@@ -188,20 +188,8 @@ function DashboardTab({ token, onAuthError }: { token: string; onAuthError: () =
                 <td style={{ color: 'var(--neon-yl)', fontFamily: 'monospace' }}>{settings.step1_passcode || '(Không bắt buộc)'}</td>
               </tr>
               <tr>
-                <td>Video Hướng Dẫn IPA</td>
-                <td style={{ maxWidth: 300, overflow: 'hidden', textOverflow: 'ellipsis' }}>{settings.guide_video_ipa || '(Chưa cấu hình)'}</td>
-              </tr>
-              <tr>
-                <td>Video Hướng Dẫn VPN</td>
-                <td style={{ maxWidth: 300, overflow: 'hidden', textOverflow: 'ellipsis' }}>{settings.guide_video_vpn || '(Chưa cấu hình)'}</td>
-              </tr>
-              <tr>
                 <td>Số Zalo Hỗ Trợ</td>
                 <td style={{ color: '#00ff88' }}>{settings.admin_zalo || '0889696810'}</td>
-              </tr>
-              <tr>
-                <td>Link Tải IPA Free Fire</td>
-                <td style={{ maxWidth: 300, overflow: 'hidden', textOverflow: 'ellipsis' }}>{settings.download_ipa_url || '(Mặc định Telegram)'}</td>
               </tr>
               <tr>
                 <td>Giới Hạn Hệ Thống / Ngày</td>
@@ -304,57 +292,6 @@ function SettingsTab({ token, onAuthError }: { token: string; onAuthError: () =>
 
   return (
     <>
-      <div className="admin-section">
-        <div className="admin-section-title">
-          <span className="tag">// GUIDE</span> Link Hướng Dẫn Kích Hoạt (Video / Bài Viết)
-        </div>
-        <div className="admin-field">
-          <label className="admin-field-label">Link Hướng Dẫn PROXY IPA (Tweak iOS)</label>
-          <input
-            className="admin-input"
-            value={settings.guide_video_ipa || ''}
-            onChange={(e) => handleChange('guide_video_ipa', e.target.value)}
-            placeholder="Dán bất kỳ link nào: YouTube, TikTok, Facebook, Google Drive, Web riêng, v.v."
-          />
-          <div className="admin-field-hint">Hỗ trợ mọi loại link (YouTube, TikTok, Facebook video, Google Drive, MP4 hoặc link bài viết hướng dẫn).</div>
-        </div>
-        <div className="admin-field">
-          <label className="admin-field-label">Link Hướng Dẫn PROXY VPN (Shadowrocket)</label>
-          <input
-            className="admin-input"
-            value={settings.guide_video_vpn || ''}
-            onChange={(e) => handleChange('guide_video_vpn', e.target.value)}
-            placeholder="Dán bất kỳ link nào: YouTube, TikTok, Facebook, Google Drive, Web riêng, v.v."
-          />
-          <div className="admin-field-hint">Hỗ trợ mọi loại link, khách bấm tab VPN sẽ thấy link này.</div>
-        </div>
-      </div>
-
-      <div className="admin-section">
-        <div className="admin-section-title">
-          <span className="tag">// DOWNLOAD</span> Nút Tải Trực Tiếp IPA & Shadowrocket
-        </div>
-        <div className="admin-field">
-          <label className="admin-field-label">Link Tải File IPA Free Fire Tweak</label>
-          <input
-            className="admin-input"
-            value={settings.download_ipa_url || ''}
-            onChange={(e) => handleChange('download_ipa_url', e.target.value)}
-            placeholder="Dán bất kỳ link tải nào: Mediafire, Google Drive, Telegram, Web riêng..."
-          />
-          <div className="admin-field-hint">Khi khách bấm nút "⚡ TẢI BẢN IPA FREE FIRE TWEAK", sẽ mở link này.</div>
-        </div>
-        <div className="admin-field">
-          <label className="admin-field-label">Link Tải Shadowrocket (VPN)</label>
-          <input
-            className="admin-input"
-            value={settings.download_shadowrocket_url || ''}
-            onChange={(e) => handleChange('download_shadowrocket_url', e.target.value)}
-            placeholder="Dán bất kỳ link nào: App Store, file IPA, Web riêng..."
-          />
-        </div>
-      </div>
-
       <div className="admin-section">
         <div className="admin-section-title">
           <span className="tag">// BYPASS</span> Link Vượt Bước 1 & Chống Vượt Ảo
@@ -517,57 +454,329 @@ function SettingsTab({ token, onAuthError }: { token: string; onAuthError: () =>
   );
 }
 
-/* ============ Sessions Tab ============ */
+/* ============ Sessions Tab (Live User & Bypass Tracking) ============ */
 function SessionsTab({ token, onAuthError }: { token: string; onAuthError: () => void }) {
   const [sessions, setSessions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [autoRefresh, setAutoRefresh] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterStep, setFilterStep] = useState<string>('all');
 
-  useEffect(() => {
-    adminApi.getSessions(token, 100).then((res) => {
-      if (res.data?.sessions) {
-        setSessions(res.data.sessions);
-      } else if (res.error?.code === 'UNAUTHORIZED') {
-        onAuthError();
-      }
-      setLoading(false);
-    });
+  const fetchSessions = useCallback(async (isBackground = false) => {
+    if (!isBackground) setRefreshing(true);
+    const res = await adminApi.getSessions(token, 100);
+    if (res.data?.sessions) {
+      setSessions(res.data.sessions);
+    } else if (res.error?.code === 'UNAUTHORIZED') {
+      onAuthError();
+    }
+    setLoading(false);
+    if (!isBackground) setRefreshing(false);
   }, [token, onAuthError]);
 
-  if (loading) return <div style={{ color: 'rgba(255,255,255,0.4)', textAlign: 'center', padding: '2rem' }}>Đang tải danh sách sessions...</div>;
+  useEffect(() => {
+    fetchSessions();
+  }, [fetchSessions]);
+
+  // Auto-refresh interval every 6 seconds
+  useEffect(() => {
+    if (!autoRefresh) return;
+    const interval = setInterval(() => {
+      fetchSessions(true);
+    }, 6000);
+    return () => clearInterval(interval);
+  }, [autoRefresh, fetchSessions]);
+
+  const handleClearHistory = async () => {
+    if (window.confirm('Bạn có chắc muốn xóa sạch toàn bộ lịch sử theo dõi phiên?')) {
+      await adminApi.clearSessions(token);
+      fetchSessions();
+    }
+  };
+
+  const formatTime = (timestamp: number | string) => {
+    if (!timestamp) return '—';
+    const date = typeof timestamp === 'number' ? new Date(timestamp) : new Date(timestamp);
+    if (isNaN(date.getTime())) return '—';
+    return date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  };
+
+  const formatRelativeTime = (timestamp: number | string) => {
+    const ts = typeof timestamp === 'number' ? timestamp : new Date(timestamp).getTime();
+    if (!ts || isNaN(ts)) return 'Vừa xong';
+    const diffSec = Math.max(0, Math.floor((Date.now() - ts) / 1000));
+    if (diffSec < 10) return '⚡ Vừa xong';
+    if (diffSec < 60) return `${diffSec}s trước`;
+    const diffMin = Math.floor(diffSec / 60);
+    if (diffMin < 60) return `${diffMin}m trước`;
+    const diffHour = Math.floor(diffMin / 60);
+    if (diffHour < 24) return `${diffHour}h trước`;
+    return `${Math.floor(diffHour / 24)}d trước`;
+  };
+
+  const filteredSessions = sessions.filter((s) => {
+    // Step filter
+    if (filterStep === 'step1' && s.step !== 'step1' && s.status !== 'step1_pending') return false;
+    if (filterStep === 'step2' && s.step !== 'step2' && s.status !== 'step2_pending') return false;
+    if (filterStep === 'completed' && s.step !== 'completed' && s.status !== 'key_ready') return false;
+
+    // Search query filter (IP, city, country, device, isp, statusLabel)
+    if (!searchTerm) return true;
+    const q = searchTerm.toLowerCase();
+    const matchIp = (s.ip || '').toLowerCase().includes(q);
+    const matchCity = (s.city || '').toLowerCase().includes(q);
+    const matchCountry = (s.country || '').toLowerCase().includes(q);
+    const matchDevice = (s.device || '').toLowerCase().includes(q);
+    const matchIsp = (s.isp || '').toLowerCase().includes(q);
+    const matchStatus = (s.statusLabel || s.overall_status || '').toLowerCase().includes(q);
+    return matchIp || matchCity || matchCountry || matchDevice || matchIsp || matchStatus;
+  });
+
+  const countStep1 = sessions.filter(s => s.step === 'step1' || s.status === 'step1_pending').length;
+  const countStep2 = sessions.filter(s => s.step === 'step2' || s.status === 'step2_pending').length;
+  const countDone = sessions.filter(s => s.step === 'completed' || s.status === 'key_ready').length;
 
   return (
-    <div className="admin-section">
-      <div className="admin-section-title">
-        <span className="tag">// SESSIONS</span> Sessions Gần Đây ({sessions.length})
+    <>
+      {/* Live Summary Bar */}
+      <div className="admin-stats-grid" style={{ marginBottom: '1rem' }}>
+        <div className="admin-stat-card" style={{ padding: '0.9rem 0.5rem' }}>
+          <div className="admin-stat-value" style={{ fontSize: '1.4rem' }}>{sessions.length}</div>
+          <div className="admin-stat-label">👥 TỔNG PHIÊN</div>
+        </div>
+        <div className="admin-stat-card yellow" style={{ padding: '0.9rem 0.5rem' }}>
+          <div className="admin-stat-value" style={{ fontSize: '1.4rem' }}>{countStep1}</div>
+          <div className="admin-stat-label">🟡 ĐANG VƯỢT LINK 1</div>
+        </div>
+        <div className="admin-stat-card magenta" style={{ padding: '0.9rem 0.5rem' }}>
+          <div className="admin-stat-value" style={{ fontSize: '1.4rem' }}>{countStep2}</div>
+          <div className="admin-stat-label">🚀 ĐANG Ở SERVERKEY</div>
+        </div>
+        <div className="admin-stat-card green" style={{ padding: '0.9rem 0.5rem' }}>
+          <div className="admin-stat-value" style={{ fontSize: '1.4rem' }}>{countDone}</div>
+          <div className="admin-stat-label">✅ ĐÃ LẤY KEY XONG</div>
+        </div>
       </div>
-      <div className="admin-table-wrap">
-        <table className="admin-table">
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Loại Proxy</th>
-              <th>Trạng Thái</th>
-              <th>Tạo Lúc</th>
-              <th>Hết Hạn</th>
-            </tr>
-          </thead>
-          <tbody>
-            {sessions.map((s) => (
-              <tr key={s.id}>
-                <td style={{ fontFamily: 'monospace', fontSize: '0.7rem' }}>{s.id.slice(0, 8)}...</td>
-                <td>{s.proxy_type ? <span className={`admin-badge ${s.proxy_type}`}>{s.proxy_type.toUpperCase()}</span> : '—'}</td>
-                <td><span className={`admin-badge ${s.overall_status}`}>{s.overall_status}</span></td>
-                <td>{new Date(s.created_at).toLocaleString('vi-VN')}</td>
-                <td>{new Date(s.expires_at).toLocaleString('vi-VN')}</td>
-              </tr>
-            ))}
-            {sessions.length === 0 && (
-              <tr><td colSpan={5} style={{ textAlign: 'center', color: 'rgba(255,255,255,0.3)' }}>Chưa có session nào</td></tr>
+
+      <div className="admin-section" style={{ padding: '1.25rem' }}>
+        {/* Header & Controls */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.8rem', marginBottom: '1.2rem' }}>
+          <div>
+            <div className="admin-section-title" style={{ marginBottom: '0.2rem' }}>
+              <span className="tag">// LIVE TRACKING</span> THEO DÕI NGƯỜI DÙNG VƯỢT LINK
+            </div>
+            <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.45)' }}>
+              Xem trực tiếp: Ai truy cập (IP, Thiết bị) • Ở đâu (Thành phố, Quốc gia, Mạng) • Đang ở bước nào
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.72rem', color: autoRefresh ? '#00ff88' : 'rgba(255,255,255,0.4)', cursor: 'pointer', userSelect: 'none' }}>
+              <input
+                type="checkbox"
+                checked={autoRefresh}
+                onChange={(e) => setAutoRefresh(e.target.checked)}
+                style={{ accentColor: '#00ff88', cursor: 'pointer' }}
+              />
+              Tự động cập nhật (6s)
+            </label>
+
+            <button
+              className="admin-logout-btn"
+              style={{ color: 'var(--neon-cy)', borderColor: 'rgba(0,240,255,0.4)', padding: '0.35rem 0.75rem' }}
+              onClick={() => fetchSessions()}
+              disabled={refreshing}
+            >
+              {refreshing ? '⏳ Đang tải...' : '🔄 Làm mới'}
+            </button>
+
+            {sessions.length > 0 && (
+              <button
+                className="admin-logout-btn"
+                style={{ color: 'rgba(255,255,255,0.4)', borderColor: 'rgba(255,255,255,0.15)', padding: '0.35rem 0.65rem' }}
+                onClick={handleClearHistory}
+                title="Xóa danh sách lịch sử này"
+              >
+                🗑️ Xóa
+              </button>
             )}
-          </tbody>
-        </table>
+          </div>
+        </div>
+
+        {/* Filter bar */}
+        <div style={{ display: 'flex', gap: '0.6rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+          <div style={{ flex: '1 1 200px' }}>
+            <input
+              type="text"
+              className="admin-input"
+              style={{ padding: '0.55rem 0.8rem', fontSize: '0.78rem' }}
+              placeholder="🔍 Tìm theo IP, thành phố (Hà Nội, HCM...), thiết bị (iPhone, Android)..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <div style={{ display: 'flex', gap: '0.35rem' }}>
+            {[
+              { id: 'all', label: 'Tất cả' },
+              { id: 'step1', label: '🟡 Link 1' },
+              { id: 'step2', label: '🚀 ServerKey' },
+              { id: 'completed', label: '✅ Nhận Key' },
+            ].map((f) => (
+              <button
+                key={f.id}
+                onClick={() => setFilterStep(f.id)}
+                style={{
+                  padding: '0.45rem 0.75rem',
+                  fontSize: '0.72rem',
+                  fontFamily: 'var(--font-mono)',
+                  background: filterStep === f.id ? 'rgba(0, 240, 255, 0.15)' : 'rgba(255,255,255,0.04)',
+                  color: filterStep === f.id ? '#00f0ff' : 'rgba(255,255,255,0.6)',
+                  border: filterStep === f.id ? '1px solid #00f0ff' : '1px solid rgba(255,255,255,0.1)',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                }}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Table */}
+        {loading ? (
+          <div style={{ color: 'rgba(255,255,255,0.4)', textAlign: 'center', padding: '2.5rem' }}>
+            Đang tải dữ liệu người dùng trực tiếp...
+          </div>
+        ) : (
+          <div className="admin-table-wrap">
+            <table className="admin-table">
+              <thead>
+                <tr>
+                  <th style={{ minWidth: 95 }}>Thời Gian</th>
+                  <th style={{ minWidth: 120 }}>Địa Chỉ IP</th>
+                  <th style={{ minWidth: 170 }}>Ở Đâu (Vị Trí & Mạng)</th>
+                  <th style={{ minWidth: 150 }}>Ai (Thiết Bị)</th>
+                  <th style={{ minWidth: 85 }}>Gói Key</th>
+                  <th style={{ minWidth: 180 }}>Đang Vượt Như Nào</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredSessions.map((s) => {
+                  const pType = (s.proxyType || s.proxy_type || '').toLowerCase();
+                  const isDone = s.step === 'completed' || s.status === 'key_ready' || s.overall_status === 'key_ready';
+                  const isStep2 = s.step === 'step2' || s.status === 'step2_pending' || s.overall_status === 'step2_pending';
+                  const isStep1 = s.step === 'step1' || s.step === 'step1_done' || s.status === 'step1_pending' || s.overall_status === 'step1_pending';
+                  
+                  let badgeClass = 'created';
+                  let statusText = s.statusLabel || s.overall_status || '⚡ Mới vào web';
+                  if (isDone) {
+                    badgeClass = 'key_ready';
+                    statusText = s.statusLabel || '✅ Đã nhận Key thành công';
+                  } else if (isStep2) {
+                    badgeClass = 'step2_pending';
+                    statusText = s.statusLabel || '🚀 Đang vượt ServerKey';
+                  } else if (isStep1) {
+                    badgeClass = 'step1_pending';
+                    statusText = s.statusLabel || (s.step === 'step1_done' ? '🟢 Đã vượt xong Link 1' : '🟡 Đang vượt Link 1 (Admin)');
+                  } else if (s.step === 'selected') {
+                    badgeClass = 'type_selected';
+                    statusText = s.statusLabel || '📱 Đã chọn gói Key';
+                  }
+
+                  const devIcon = s.deviceIcon || (s.device?.toLowerCase().includes('iphone') ? '📱' : s.device?.toLowerCase().includes('android') ? '🤖' : '💻');
+                  const locationStr = s.location || (s.city ? `🇻🇳 ${s.city}, ${s.country || 'VN'}` : (s.country ? `🌐 ${s.country}` : '🇻🇳 Việt Nam'));
+
+                  return (
+                    <tr key={s.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                      {/* 1. Time */}
+                      <td style={{ whiteSpace: 'nowrap' }}>
+                        <div style={{ color: '#fff', fontSize: '0.78rem', fontWeight: 600, fontFamily: 'monospace' }}>
+                          {formatTime(s.updatedAt || s.created_at)}
+                        </div>
+                        <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.68rem', marginTop: '2px' }}>
+                          {formatRelativeTime(s.updatedAt || s.created_at)}
+                        </div>
+                      </td>
+
+                      {/* 2. IP */}
+                      <td>
+                        <div style={{ fontFamily: 'monospace', color: '#00f0ff', fontSize: '0.78rem', fontWeight: 600 }}>
+                          {s.ip || '127.0.0.1'}
+                        </div>
+                        <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.65rem', fontFamily: 'monospace' }}>
+                          ID: {(s.id || '').slice(0, 10)}
+                        </div>
+                      </td>
+
+                      {/* 3. Location & ISP */}
+                      <td>
+                        <div style={{ fontWeight: 600, color: '#e0e6ed', fontSize: '0.78rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          {locationStr}
+                        </div>
+                        {s.isp ? (
+                          <div style={{ color: '#a0aec0', fontSize: '0.68rem', marginTop: '2px' }}>
+                            🏢 {s.isp}
+                          </div>
+                        ) : (
+                          <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.68rem' }}>
+                            🌐 Mạng nội địa
+                          </div>
+                        )}
+                      </td>
+
+                      {/* 4. Device */}
+                      <td>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.78rem', color: '#fff' }}>
+                          <span>{devIcon}</span>
+                          <span style={{ fontWeight: 600 }}>{s.device || 'Thiết bị di động'}</span>
+                        </div>
+                        <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.68rem', marginTop: '2px' }}>
+                          HĐH: {s.os || 'Web Browser'}
+                        </div>
+                      </td>
+
+                      {/* 5. Proxy Type */}
+                      <td>
+                        {pType === 'ipa' && (
+                          <span className="admin-badge ipa" style={{ fontSize: '0.68rem' }}>
+                            📱 IPA (Tweak)
+                          </span>
+                        )}
+                        {pType === 'vpn' && (
+                          <span className="admin-badge vpn" style={{ fontSize: '0.68rem' }}>
+                            🛡️ VPN (Proxy)
+                          </span>
+                        )}
+                        {!pType && (
+                          <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.72rem' }}>—</span>
+                        )}
+                      </td>
+
+                      {/* 6. Current Status & How they are bypassing */}
+                      <td>
+                        <span className={`admin-badge ${badgeClass} live-pulse`} style={{ fontSize: '0.74rem', padding: '0.3rem 0.65rem' }}>
+                          {statusText}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+
+                {filteredSessions.length === 0 && (
+                  <tr>
+                    <td colSpan={6} style={{ textAlign: 'center', padding: '2rem', color: 'rgba(255,255,255,0.4)' }}>
+                      {searchTerm ? 'Không tìm thấy phiên nào khớp với từ khóa tìm kiếm' : 'Chưa có người dùng nào truy cập gần đây'}
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
-    </div>
+    </>
   );
 }
 

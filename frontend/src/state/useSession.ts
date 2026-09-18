@@ -79,7 +79,7 @@ export function useSession() {
     api.completeBypass(sid).catch(() => {});
 
     // Call real ServerKey API (https://serveripa.proxyvip.click/api/getkey)
-    const res = await api.startStep2(sid);
+    const res = await api.startStep2(sid, state.proxyType || 'ipa');
     const flowUrl = (res.data as any)?.flowUrl || (res.data as any)?.url;
 
     if (flowUrl) {

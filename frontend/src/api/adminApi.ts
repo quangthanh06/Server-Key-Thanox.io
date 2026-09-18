@@ -44,4 +44,7 @@ export const adminApi = {
   
   getKeys: (token: string, limit = 50, offset = 0) => 
     adminRequest<any>(`/api/admin/keys?limit=${limit}&offset=${offset}`, token),
+  
+  clearSessions: (token: string) =>
+    adminRequest<any>('/api/admin/sessions', token, { method: 'DELETE' }),
 };
