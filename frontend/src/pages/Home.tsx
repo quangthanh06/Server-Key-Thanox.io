@@ -72,28 +72,70 @@ export function Home() {
   const [completedSteps, setCompletedSteps] = useState(0);
   const [activeBypassUrl, setActiveBypassUrl] = useState('');
 
+  const defaultBypassLinks = [
+    { id: '1', title: 'Máy chủ xác thực 1 (Layma 1)', url: 'https://layma.net/RwlXK7AH6', passcode: '' },
+    { id: '2', title: 'Máy chủ xác thực 2 (Layma 2)', url: 'https://layma.net/i1vAwGviV', passcode: '' }
+  ];
+
   const bypassLinks = (state.stats?.bypassLinks && state.stats.bypassLinks.length > 0)
     ? state.stats.bypassLinks
     : (state.stats?.step1BypassUrl
-      ? [{ id: '1', title: 'Máy chủ xác thực 1', url: state.stats.step1BypassUrl, passcode: state.stats.step1Passcode || '' }]
-      : []);
+      ? [
+          { id: '1', title: 'Máy chủ xác thực 1 (Layma 1)', url: state.stats.step1BypassUrl, passcode: state.stats.step1Passcode || '' },
+          { id: '2', title: 'Máy chủ xác thực 2 (Layma 2)', url: 'https://layma.net/i1vAwGviV', passcode: '' }
+        ]
+      : defaultBypassLinks);
 
   const totalBypassSteps = bypassLinks.length;
   const currentLink = bypassLinks[currentStepIndex] || bypassLinks[0];
 
-  // Auto-detect completed step on page load (from ?done=1 or ?step=2 or localStorage)
+  // Cross-tab synchronization via storage event (e.g. Tab 2 redirects from Layma -> Tab 1 updates instantly)
+  useEffect(() => {
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === 'thanox_done_step' && e.newValue) {
+        const val = parseInt(e.newValue, 10) || 0;
+        if (val > 0) {
+          setCompletedSteps(val);
+          setCurrentStepIndex(Math.min(val, totalBypassSteps - 1));
+          setBypassCooldown(0);
+          try { localStorage.removeItem('thanox_bypass_cooldown_end'); } catch (_) {}
+        }
+      }
+    };
+    window.addEventListener('storage', handleStorage);
+    return () => window.removeEventListener('storage', handleStorage);
+  }, [totalBypassSteps]);
+
+  // Auto-detect completed step on page load (from ?done=1 or #?done=1 or referrer or pending step)
   useEffect(() => {
     try {
-      const params = new URLSearchParams(window.location.search);
-      const doneParam = params.get('done');
-      const stepParam = params.get('step');
+      // 1. Check search query string
+      const searchParams = new URLSearchParams(window.location.search);
+      // 2. Check hash query string (e.g. /#?done=1 or /#/?done=1)
+      const hashQuery = window.location.hash.includes('?') ? window.location.hash.split('?')[1] : '';
+      const hashParams = new URLSearchParams(hashQuery);
+
+      const doneParam = searchParams.get('done') || hashParams.get('done');
+      const stepParam = searchParams.get('step') || hashParams.get('step');
 
       let doneVal = 0;
       if (doneParam) {
         doneVal = parseInt(doneParam, 10) || 0;
       } else if (stepParam) {
         doneVal = (parseInt(stepParam, 10) || 1) - 1;
-      } else {
+      }
+
+      // 3. Check document.referrer (Did visitor return from Layma?)
+      const ref = (typeof document !== 'undefined' ? document.referrer || '' : '').toLowerCase();
+      const isFromLayma = ref.includes('layma') || ref.includes('short') || ref.includes('link');
+      const pendingStep = localStorage.getItem('thanox_pending_step');
+
+      if (!doneVal && (isFromLayma || (pendingStep && window.location.hash.includes('#')))) {
+        doneVal = pendingStep ? parseInt(pendingStep, 10) : 1;
+      }
+
+      // 4. Check existing saved done step in localStorage
+      if (!doneVal) {
         const saved = localStorage.getItem('thanox_done_step');
         const savedTime = localStorage.getItem('thanox_done_step_time');
         if (saved && savedTime) {
@@ -108,17 +150,11 @@ export function Home() {
       }
 
       if (doneVal > 0 && totalBypassSteps > 0) {
-        // If coming directly via ?done=..., Layma has verified completion
-        if (doneParam) {
-          localStorage.setItem('thanox_done_step', String(doneVal));
-          localStorage.setItem('thanox_done_step_time', String(Date.now()));
-          localStorage.removeItem('thanox_bypass_cooldown_end');
-          setBypassCooldown(0);
-          try {
-            const cleanUrl = window.location.pathname + window.location.hash;
-            window.history.replaceState({}, '', cleanUrl);
-          } catch (_) {}
-        }
+        localStorage.setItem('thanox_done_step', String(doneVal));
+        localStorage.setItem('thanox_done_step_time', String(Date.now()));
+        localStorage.removeItem('thanox_pending_step');
+        localStorage.removeItem('thanox_bypass_cooldown_end');
+        setBypassCooldown(0);
 
         setCompletedSteps(doneVal);
         const nextStep = Math.min(doneVal, totalBypassSteps - 1);
@@ -126,6 +162,13 @@ export function Home() {
         if (doneVal < totalBypassSteps) {
           const nextLink = bypassLinks[nextStep];
           setActiveBypassUrl(nextLink?.url || '');
+        }
+
+        if (doneParam || stepParam) {
+          try {
+            const cleanUrl = window.location.pathname + window.location.hash.split('?')[0];
+            window.history.replaceState({}, '', cleanUrl);
+          } catch (_) {}
         }
       }
     } catch (_) {}
@@ -169,6 +212,7 @@ export function Home() {
       const cd = state.stats?.bypassCooldownSeconds || 60;
       setBypassCooldown(cd);
       try {
+        localStorage.setItem('thanox_pending_step', String(targetStep + 1));
         localStorage.setItem('thanox_bypass_start_time', String(Date.now()));
         localStorage.setItem('thanox_bypass_cooldown_end', String(Date.now() + cd * 1000));
       } catch (_) {}
@@ -192,13 +236,14 @@ export function Home() {
       try {
         localStorage.setItem('thanox_done_step', String(newDone));
         localStorage.setItem('thanox_done_step_time', String(Date.now()));
+        localStorage.removeItem('thanox_pending_step');
         localStorage.removeItem('thanox_bypass_cooldown_end');
       } catch (_) {}
 
       if (currentStepIndex < totalBypassSteps - 1) {
         const nextIdx = currentStepIndex + 1;
         const nextLink = bypassLinks[nextIdx];
-        const nextUrl = nextLink?.url || 'https://thanoxstorebot.shop/?step=1';
+        const nextUrl = nextLink?.url || 'https://layma.net/i1vAwGviV';
         setCurrentStepIndex(nextIdx);
         setActiveBypassUrl(nextUrl);
         setPasscode('');
@@ -206,6 +251,7 @@ export function Home() {
         const cd = state.stats?.bypassCooldownSeconds || 60;
         setBypassCooldown(cd);
         try {
+          localStorage.setItem('thanox_pending_step', String(nextIdx + 1));
           localStorage.setItem('thanox_bypass_start_time', String(Date.now()));
           localStorage.setItem('thanox_bypass_cooldown_end', String(Date.now() + cd * 1000));
         } catch (_) {}
@@ -400,8 +446,43 @@ export function Home() {
                   color: 'var(--neon-amb)',
                   lineHeight: '1.45'
                 }}>
-                  ⏱️ <b>HỆ THỐNG ĐANG GIÁM SÁT TIẾN TRÌNH VƯỢT LINK:</b><br />
-                  Vui lòng hoàn thành nhiệm vụ trên trang vừa mở. Nút tiếp tục sẽ mở sau <b>{bypassCooldown}s</b> (hoặc trang sẽ tự động chuyển tiếp ngay khi bạn hoàn tất).
+                  <div>⏱️ <b>HỆ THỐNG ĐANG GIÁM SÁT TIẾN TRÌNH VƯỢT LINK:</b></div>
+                  <div style={{ marginTop: '0.25rem', color: 'var(--text-dim)', fontSize: '0.72rem' }}>
+                    Vui lòng hoàn thành nhiệm vụ trên trang Layma vừa mở. Nút sẽ mở sau <b>{bypassCooldown}s</b> (hoặc web sẽ tự động chuyển tiếp khi bạn hoàn tất).
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const newDone = currentStepIndex + 1;
+                      setCompletedSteps(newDone);
+                      try {
+                        localStorage.setItem('thanox_done_step', String(newDone));
+                        localStorage.setItem('thanox_done_step_time', String(Date.now()));
+                        localStorage.removeItem('thanox_pending_step');
+                        localStorage.removeItem('thanox_bypass_cooldown_end');
+                      } catch (_) {}
+                      setBypassCooldown(0);
+                      if (currentStepIndex < totalBypassSteps - 1) {
+                        const nextIdx = currentStepIndex + 1;
+                        setCurrentStepIndex(nextIdx);
+                        const nextLink = bypassLinks[nextIdx];
+                        setActiveBypassUrl(nextLink?.url || '');
+                      }
+                    }}
+                    style={{
+                      marginTop: '0.6rem',
+                      background: 'rgba(0, 240, 255, 0.12)',
+                      border: '1px solid var(--border-cy)',
+                      borderRadius: '6px',
+                      color: 'var(--neon-cy)',
+                      fontSize: '0.72rem',
+                      padding: '5px 12px',
+                      cursor: 'pointer',
+                      fontWeight: 700
+                    }}
+                  >
+                    ⚡ Tôi Đã Vượt Xong Trên Layma → Sang Bước 2 Ngay
+                  </button>
                 </div>
               )}
               
