@@ -47,6 +47,7 @@ export interface SystemStats {
   step1BypassUrl?: string | null;
   step1Passcode?: string | null;
   stepSuccessMsg?: string | null;
+  bypassCooldownSeconds?: number;
   bypassLinks?: BypassLink[];
   adminZalo?: string | null;
   supportLink?: string | null;

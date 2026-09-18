@@ -6,6 +6,7 @@ const globalSettings: Record<string, string> = {
     { id: '1', title: 'Máy chủ xác thực 1', url: 'https://thanoxstorebot.shop/?step=1', passcode: '', note: '' }
   ]),
   step_success_msg: '🎉 Đã hoàn thành Bước {step}/{total}! Hãy bấm nút bên dưới để tiếp tục vượt bước tiếp theo.',
+  bypass_cooldown_seconds: '60',
   admin_zalo: '0889696810',
   support_link: 'https://zalo.me/0889696810',
   daily_global_limit: '3000',
@@ -496,6 +497,7 @@ export async function onRequest(context: { request: Request; env: any }) {
           step1BypassUrl: globalSettings.step1_bypass_url || null,
           step1Passcode: globalSettings.step1_passcode || null,
           stepSuccessMsg: globalSettings.step_success_msg || '🎉 Đã hoàn thành Bước {step}/{total}! Hãy bấm nút bên dưới để tiếp tục vượt bước tiếp theo.',
+          bypassCooldownSeconds: parseInt(globalSettings.bypass_cooldown_seconds || '60', 10),
           bypassLinks: bypassLinks,
           adminZalo: globalSettings.admin_zalo || '0889696810',
           supportLink: globalSettings.support_link || null,

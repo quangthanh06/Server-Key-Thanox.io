@@ -19,19 +19,50 @@ export function Home() {
   const { state, actions } = useSession();
   const [bypassCooldown, setBypassCooldown] = useState(0);
 
-  // Anti-cheat cooldown: 15s timer when entering step1 or step2
+  // Initialize active countdown across page reloads or tab switches
+  useEffect(() => {
+    try {
+      const savedEnd = localStorage.getItem('thanox_bypass_cooldown_end');
+      if (savedEnd) {
+        const remaining = Math.max(0, Math.ceil((parseInt(savedEnd, 10) - Date.now()) / 1000));
+        if (remaining > 0) {
+          setBypassCooldown(remaining);
+        } else {
+          localStorage.removeItem('thanox_bypass_cooldown_end');
+        }
+      }
+    } catch (_) {}
+  }, []);
+
+  // Anti-cheat cooldown: 60s timer (1 phút) when entering step1 or step2
   useEffect(() => {
     if (state.status === 'step1_pending' || state.status === 'step2_pending') {
-      setBypassCooldown(15);
-    } else {
-      setBypassCooldown(0);
+      const cd = state.stats?.bypassCooldownSeconds || 60;
+      let remaining = cd;
+      try {
+        const savedEnd = localStorage.getItem('thanox_bypass_cooldown_end');
+        if (savedEnd) {
+          const rem = Math.max(0, Math.ceil((parseInt(savedEnd, 10) - Date.now()) / 1000));
+          if (rem > 0) remaining = rem;
+          else localStorage.setItem('thanox_bypass_cooldown_end', String(Date.now() + cd * 1000));
+        } else {
+          localStorage.setItem('thanox_bypass_cooldown_end', String(Date.now() + cd * 1000));
+        }
+      } catch (_) {}
+      setBypassCooldown(remaining);
     }
-  }, [state.status]);
+  }, [state.status, state.stats?.bypassCooldownSeconds]);
 
   useEffect(() => {
     if (bypassCooldown <= 0) return;
     const timer = setInterval(() => {
-      setBypassCooldown((prev) => Math.max(0, prev - 1));
+      setBypassCooldown((prev) => {
+        if (prev <= 1) {
+          try { localStorage.removeItem('thanox_bypass_cooldown_end'); } catch (_) {}
+          return 0;
+        }
+        return prev - 1;
+      });
     }, 1000);
     return () => clearInterval(timer);
   }, [bypassCooldown]);
@@ -64,10 +95,31 @@ export function Home() {
         doneVal = (parseInt(stepParam, 10) || 1) - 1;
       } else {
         const saved = localStorage.getItem('thanox_done_step');
-        if (saved) doneVal = parseInt(saved, 10) || 0;
+        const savedTime = localStorage.getItem('thanox_done_step_time');
+        if (saved && savedTime) {
+          const age = Date.now() - parseInt(savedTime, 10);
+          if (age < 3600 * 1000) { // Valid for 1 hour
+            doneVal = parseInt(saved, 10) || 0;
+          } else {
+            localStorage.removeItem('thanox_done_step');
+            localStorage.removeItem('thanox_done_step_time');
+          }
+        }
       }
 
       if (doneVal > 0 && totalBypassSteps > 0) {
+        // If coming directly via ?done=..., Layma has verified completion
+        if (doneParam) {
+          localStorage.setItem('thanox_done_step', String(doneVal));
+          localStorage.setItem('thanox_done_step_time', String(Date.now()));
+          localStorage.removeItem('thanox_bypass_cooldown_end');
+          setBypassCooldown(0);
+          try {
+            const cleanUrl = window.location.pathname + window.location.hash;
+            window.history.replaceState({}, '', cleanUrl);
+          } catch (_) {}
+        }
+
         setCompletedSteps(doneVal);
         const nextStep = Math.min(doneVal, totalBypassSteps - 1);
         setCurrentStepIndex(nextStep);
@@ -90,7 +142,11 @@ export function Home() {
 
     // If user has already completed all steps, go straight to ServerKey
     if (completedSteps >= totalBypassSteps && totalBypassSteps > 0) {
-      try { localStorage.removeItem('thanox_done_step'); } catch (_) {}
+      try {
+        localStorage.removeItem('thanox_done_step');
+        localStorage.removeItem('thanox_done_step_time');
+        localStorage.removeItem('thanox_bypass_cooldown_end');
+      } catch (_) {}
       actions.completeStep1AndStartStep2();
       setCompletedSteps(0);
       setCurrentStepIndex(0);
@@ -108,11 +164,23 @@ export function Home() {
       const targetLink = bypassLinks[targetStep];
       const targetUrl = targetLink?.url || state.stats?.step1BypassUrl || 'https://thanoxstorebot.shop/?step=1';
       setActiveBypassUrl(targetUrl);
+
+      // Start 60s cooldown (1 phút) — DO NOT set thanox_done_step yet!
+      const cd = state.stats?.bypassCooldownSeconds || 60;
+      setBypassCooldown(cd);
       try {
-        localStorage.setItem('thanox_done_step', String(targetStep + 1));
+        localStorage.setItem('thanox_bypass_start_time', String(Date.now()));
+        localStorage.setItem('thanox_bypass_cooldown_end', String(Date.now() + cd * 1000));
       } catch (_) {}
+
       actions.startBypass(targetUrl, targetStep, totalBypassSteps, targetLink?.title);
     } else if (state.status === 'step1_pending') {
+      // Must not be in cooldown
+      if (bypassCooldown > 0) {
+        alert(`Vui lòng hoàn thành vượt link! Hệ thống đang giám sát và bạn cần đợi thêm ${bypassCooldown} giây nữa để xác nhận.`);
+        return;
+      }
+
       const requiredPasscode = currentLink?.passcode?.trim();
       if (requiredPasscode && passcode.trim() !== requiredPasscode) {
         alert(`Mã xác nhận Bước ${currentStepIndex + 1} chưa chính xác! Vui lòng hoàn thành vượt link để lấy mã xác nhận.`);
@@ -121,7 +189,11 @@ export function Home() {
 
       const newDone = currentStepIndex + 1;
       setCompletedSteps(newDone);
-      try { localStorage.setItem('thanox_done_step', String(newDone)); } catch (_) {}
+      try {
+        localStorage.setItem('thanox_done_step', String(newDone));
+        localStorage.setItem('thanox_done_step_time', String(Date.now()));
+        localStorage.removeItem('thanox_bypass_cooldown_end');
+      } catch (_) {}
 
       if (currentStepIndex < totalBypassSteps - 1) {
         const nextIdx = currentStepIndex + 1;
@@ -130,7 +202,13 @@ export function Home() {
         setCurrentStepIndex(nextIdx);
         setActiveBypassUrl(nextUrl);
         setPasscode('');
-        setBypassCooldown(10);
+        
+        const cd = state.stats?.bypassCooldownSeconds || 60;
+        setBypassCooldown(cd);
+        try {
+          localStorage.setItem('thanox_bypass_start_time', String(Date.now()));
+          localStorage.setItem('thanox_bypass_cooldown_end', String(Date.now() + cd * 1000));
+        } catch (_) {}
 
         if (state.sessionId) {
           api.completeBypass(state.sessionId, currentStepIndex, false).catch(() => {});
@@ -144,7 +222,11 @@ export function Home() {
         if (state.sessionId) {
           api.completeBypass(state.sessionId, currentStepIndex, true).catch(() => {});
         }
-        try { localStorage.removeItem('thanox_done_step'); } catch (_) {}
+        try {
+          localStorage.removeItem('thanox_done_step');
+          localStorage.removeItem('thanox_done_step_time');
+          localStorage.removeItem('thanox_bypass_cooldown_end');
+        } catch (_) {}
         actions.completeStep1AndStartStep2();
         setCurrentStepIndex(0);
         setCompletedSteps(0);
@@ -305,6 +387,23 @@ export function Home() {
 
               
               <ErrorBox error={state.error} onDismiss={actions.clearError} />
+
+              {bypassCooldown > 0 && state.status === 'step1_pending' && (
+                <div style={{
+                  margin: '0.85rem 0',
+                  padding: '0.65rem 0.85rem',
+                  background: 'rgba(255, 170, 0, 0.08)',
+                  border: '1px dashed rgba(255, 170, 0, 0.4)',
+                  borderRadius: '8px',
+                  textAlign: 'center',
+                  fontSize: '0.75rem',
+                  color: 'var(--neon-amb)',
+                  lineHeight: '1.45'
+                }}>
+                  ⏱️ <b>HỆ THỐNG ĐANG GIÁM SÁT TIẾN TRÌNH VƯỢT LINK:</b><br />
+                  Vui lòng hoàn thành nhiệm vụ trên trang vừa mở. Nút tiếp tục sẽ mở sau <b>{bypassCooldown}s</b> (hoặc trang sẽ tự động chuyển tiếp ngay khi bạn hoàn tất).
+                </div>
+              )}
               
               <ActionButton 
                 onClick={handleActionClick}

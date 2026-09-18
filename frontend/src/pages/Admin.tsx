@@ -321,7 +321,8 @@ function SettingsTab({ token, onAuthError }: { token: string; onAuthError: () =>
       bypass_links_json: JSON.stringify(bypassSteps),
       step1_bypass_url: bypassSteps[0]?.url || '',
       step1_passcode: bypassSteps[0]?.passcode || '',
-      step_success_msg: settings.step_success_msg || ''
+      step_success_msg: settings.step_success_msg || '',
+      bypass_cooldown_seconds: settings.bypass_cooldown_seconds || '60'
     };
 
     try {
@@ -468,6 +469,22 @@ function SettingsTab({ token, onAuthError }: { token: string; onAuthError: () =>
           />
           <div className="admin-field-hint">
             Thông báo xuất hiện khi khách quay về web sau khi vượt link. ({`{step}`} = số bước vừa xong, {`{total}`} = tổng số bước).
+          </div>
+        </div>
+
+        <div className="admin-field" style={{ marginTop: '0.5rem', marginBottom: '1rem' }}>
+          <label className="admin-field-label">⏱️ Thời Gian Đếm Ngược Chống Gian Lận (Giây)</label>
+          <input
+            className="admin-input"
+            type="number"
+            min="10"
+            max="300"
+            value={settings.bypass_cooldown_seconds || '60'}
+            onChange={(e) => handleChange('bypass_cooldown_seconds', e.target.value)}
+            placeholder="60"
+          />
+          <div className="admin-field-hint">
+            Số giây đếm ngược bắt buộc giữa các bước (Khuyên dùng: <b>60 giây = 1 phút</b>). Hệ thống sẽ khóa nút trong suốt thời gian này để đảm bảo khách phải ở lại trang Layma thực hiện nhiệm vụ, không thể vừa mở link đã quay lại bấm hoàn thành.
           </div>
         </div>
 
