@@ -12,7 +12,6 @@ import { ResultBox } from '../components/ResultBox';
 import { ErrorBox } from '../components/ErrorBox';
 import { LoadingOverlay } from '../components/LoadingOverlay';
 import { ActionButton } from '../components/ActionButton';
-import { KeyDisplay } from '../components/KeyDisplay';
 import { SessionInfo } from '../components/SessionInfo';
 import { GuideCard } from '../components/GuideCard';
 import { OnlineCounter } from '../components/OnlineCounter';
@@ -74,13 +73,13 @@ export function Home() {
     
     if (state.status === 'created' || state.status === 'type_selected') {
       const typeLabel = (state.proxyType || 'ipa').toUpperCase();
-      return `⚡ BƯỚC 1: TẠO LINK VƯỢT PROXY ${typeLabel}`;
+      return `⚡ TẠO LINK NHẬN KEY ${typeLabel}`;
     }
     if (state.status === 'step1_pending') {
       if (bypassCooldown > 0) {
         return `⏳ ĐANG VƯỢT LINK 1 (${bypassCooldown}s)...`;
       }
-      return '✓ TÔI ĐÃ VƯỢT XONG LINK 1 → CHUYỂN QUA SERVERKEY';
+      return '✓ ĐÃ VƯỢT XONG LINK 1 → LẤY KEY TẠI SERVERKEY';
     }
     return undefined;
   };
@@ -259,17 +258,6 @@ export function Home() {
                 />
               )}
             </Card>
-          )}
-
-          {/* Final Step: Key Display */}
-          {state.status === 'key_ready' && state.key && state.keyExpiresAt && state.proxyType && (
-            <KeyDisplay 
-              keyValue={state.key} 
-              expiresAt={state.keyExpiresAt} 
-              proxyType={state.proxyType}
-              stats={state.stats}
-              onReset={actions.resetFlow}
-            />
           )}
 
           <Card title="Trạng Thái Phiên" tag="// THÔNG TIN HỆ THỐNG">

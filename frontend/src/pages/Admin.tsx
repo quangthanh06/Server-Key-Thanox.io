@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { adminApi } from '../api/adminApi';
 import './Admin.css';
 
-type Tab = 'dashboard' | 'settings' | 'sessions' | 'keys';
+type Tab = 'dashboard' | 'settings' | 'sessions';
 
 export function Admin() {
   const [token, setToken] = useState<string | null>(() => {
@@ -92,7 +92,7 @@ export function Admin() {
       </div>
 
       <nav className="admin-nav">
-        {(['dashboard', 'settings', 'sessions', 'keys'] as Tab[]).map((t) => (
+        {(['dashboard', 'settings', 'sessions'] as Tab[]).map((t) => (
           <button
             key={t}
             className={`admin-nav-btn ${tab === t ? 'active' : ''}`}
@@ -101,7 +101,6 @@ export function Admin() {
             {t === 'dashboard' && '📊 Tổng quan'}
             {t === 'settings' && '⚙️ Cài đặt'}
             {t === 'sessions' && '👤 Sessions'}
-            {t === 'keys' && '🔑 Keys'}
           </button>
         ))}
       </nav>
@@ -109,7 +108,6 @@ export function Admin() {
       {tab === 'dashboard' && <DashboardTab token={token} onAuthError={handleLogout} />}
       {tab === 'settings' && <SettingsTab token={token} onAuthError={handleLogout} />}
       {tab === 'sessions' && <SessionsTab token={token} onAuthError={handleLogout} />}
-      {tab === 'keys' && <KeysTab token={token} onAuthError={handleLogout} />}
     </div>
   );
 }
@@ -156,11 +154,11 @@ function DashboardTab({ token, onAuthError }: { token: string; onAuthError: () =
         </div>
         <div className="admin-stat-card green">
           <div className="admin-stat-value">{stats.todayKeys}</div>
-          <div className="admin-stat-label">Keys Hôm Nay</div>
+          <div className="admin-stat-label">Lượt Chuyển ServerKey Hôm Nay</div>
         </div>
         <div className="admin-stat-card magenta">
           <div className="admin-stat-value">{stats.totalKeys}</div>
-          <div className="admin-stat-label">Tổng Keys Đã Cấp</div>
+          <div className="admin-stat-label">Tổng Lượt Chuyển ServerKey</div>
         </div>
         <div className="admin-stat-card yellow">
           <div className="admin-stat-value">{stats.activeSessions}</div>
@@ -308,27 +306,27 @@ function SettingsTab({ token, onAuthError }: { token: string; onAuthError: () =>
     <>
       <div className="admin-section">
         <div className="admin-section-title">
-          <span className="tag">// VIDEO</span> Video Hướng Dẫn Kích Hoạt Key
+          <span className="tag">// GUIDE</span> Link Hướng Dẫn Kích Hoạt (Video / Bài Viết)
         </div>
         <div className="admin-field">
-          <label className="admin-field-label">Link Video Hướng Dẫn PROXY IPA (Tweak iOS)</label>
+          <label className="admin-field-label">Link Hướng Dẫn PROXY IPA (Tweak iOS)</label>
           <input
             className="admin-input"
             value={settings.guide_video_ipa || ''}
             onChange={(e) => handleChange('guide_video_ipa', e.target.value)}
-            placeholder="Dán link YouTube (ví dụ: https://www.youtube.com/watch?v=... hoặc shorts) hoặc link MP4"
+            placeholder="Dán bất kỳ link nào: YouTube, TikTok, Facebook, Google Drive, Web riêng, v.v."
           />
-          <div className="admin-field-hint">Video này sẽ hiển thị trực tiếp trong mục Hướng Dẫn khi khách bấm vào tab IPA.</div>
+          <div className="admin-field-hint">Hỗ trợ mọi loại link (YouTube, TikTok, Facebook video, Google Drive, MP4 hoặc link bài viết hướng dẫn).</div>
         </div>
         <div className="admin-field">
-          <label className="admin-field-label">Link Video Hướng Dẫn PROXY VPN (Shadowrocket)</label>
+          <label className="admin-field-label">Link Hướng Dẫn PROXY VPN (Shadowrocket)</label>
           <input
             className="admin-input"
             value={settings.guide_video_vpn || ''}
             onChange={(e) => handleChange('guide_video_vpn', e.target.value)}
-            placeholder="Dán link YouTube hoặc link video MP4"
+            placeholder="Dán bất kỳ link nào: YouTube, TikTok, Facebook, Google Drive, Web riêng, v.v."
           />
-          <div className="admin-field-hint">Video này sẽ hiển thị trực tiếp khi khách bấm vào tab VPN Shadowrocket.</div>
+          <div className="admin-field-hint">Hỗ trợ mọi loại link, khách bấm tab VPN sẽ thấy link này.</div>
         </div>
       </div>
 
@@ -342,7 +340,7 @@ function SettingsTab({ token, onAuthError }: { token: string; onAuthError: () =>
             className="admin-input"
             value={settings.download_ipa_url || ''}
             onChange={(e) => handleChange('download_ipa_url', e.target.value)}
-            placeholder="Link Mediafire, Google Drive, Telegram tải file IPA Free Fire"
+            placeholder="Dán bất kỳ link tải nào: Mediafire, Google Drive, Telegram, Web riêng..."
           />
           <div className="admin-field-hint">Khi khách bấm nút "⚡ TẢI BẢN IPA FREE FIRE TWEAK", sẽ mở link này.</div>
         </div>
@@ -352,7 +350,7 @@ function SettingsTab({ token, onAuthError }: { token: string; onAuthError: () =>
             className="admin-input"
             value={settings.download_shadowrocket_url || ''}
             onChange={(e) => handleChange('download_shadowrocket_url', e.target.value)}
-            placeholder="Link App Store hoặc file IPA Shadowrocket"
+            placeholder="Dán bất kỳ link nào: App Store, file IPA, Web riêng..."
           />
         </div>
       </div>
@@ -573,56 +571,4 @@ function SessionsTab({ token, onAuthError }: { token: string; onAuthError: () =>
   );
 }
 
-/* ============ Keys Tab ============ */
-function KeysTab({ token, onAuthError }: { token: string; onAuthError: () => void }) {
-  const [keys, setKeys] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    adminApi.getKeys(token, 100).then((res) => {
-      if (res.data?.keys) {
-        setKeys(res.data.keys);
-      } else if (res.error?.code === 'UNAUTHORIZED') {
-        onAuthError();
-      }
-      setLoading(false);
-    });
-  }, [token, onAuthError]);
-
-  if (loading) return <div style={{ color: 'rgba(255,255,255,0.4)', textAlign: 'center', padding: '2rem' }}>Đang tải danh sách keys...</div>;
-
-  return (
-    <div className="admin-section">
-      <div className="admin-section-title">
-        <span className="tag">// KEYS</span> Keys Đã Cấp ({keys.length})
-      </div>
-      <div className="admin-table-wrap">
-        <table className="admin-table">
-          <thead>
-            <tr>
-              <th>Key</th>
-              <th>Loại</th>
-              <th>Trạng Thái</th>
-              <th>Tạo Lúc</th>
-              <th>Hết Hạn</th>
-            </tr>
-          </thead>
-          <tbody>
-            {keys.map((k) => (
-              <tr key={k.id}>
-                <td style={{ fontFamily: 'monospace', color: '#00ff88' }}>{k.key_value}</td>
-                <td><span className={`admin-badge ${k.proxy_type}`}>{k.proxy_type.toUpperCase()}</span></td>
-                <td><span className={`admin-badge ${k.status}`}>{k.status}</span></td>
-                <td>{new Date(k.created_at).toLocaleString('vi-VN')}</td>
-                <td>{new Date(k.expires_at).toLocaleString('vi-VN')}</td>
-              </tr>
-            ))}
-            {keys.length === 0 && (
-              <tr><td colSpan={5} style={{ textAlign: 'center', color: 'rgba(255,255,255,0.3)' }}>Chưa có key nào được cấp</td></tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-}
