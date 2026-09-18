@@ -320,7 +320,8 @@ function SettingsTab({ token, onAuthError }: { token: string; onAuthError: () =>
       ...settings,
       bypass_links_json: JSON.stringify(bypassSteps),
       step1_bypass_url: bypassSteps[0]?.url || '',
-      step1_passcode: bypassSteps[0]?.passcode || ''
+      step1_passcode: bypassSteps[0]?.passcode || '',
+      step_success_msg: settings.step_success_msg || ''
     };
 
     try {
@@ -387,7 +388,7 @@ function SettingsTab({ token, onAuthError }: { token: string; onAuthError: () =>
               )}
             </div>
 
-            <div className="admin-field" style={{ marginBottom: '0.65rem' }}>
+            <div className="admin-field" style={{ marginBottom: '0.45rem' }}>
               <label className="admin-field-label">URL Vượt Link Bước {idx + 1}</label>
               <input
                 className="admin-input"
@@ -395,6 +396,43 @@ function SettingsTab({ token, onAuthError }: { token: string; onAuthError: () =>
                 onChange={(e) => handleUpdateStep(idx, 'url', e.target.value)}
                 placeholder="https://linkvertise.com/... hoặc https://gtraffic.io/..."
               />
+            </div>
+
+            <div style={{
+              marginBottom: '0.75rem',
+              padding: '0.45rem 0.65rem',
+              background: 'rgba(0, 240, 255, 0.04)',
+              border: '1px dashed rgba(0, 240, 255, 0.25)',
+              borderRadius: '6px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '0.5rem'
+            }}>
+              <div style={{ fontSize: '0.68rem', color: 'var(--text-dim)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                📍 <b>URL đích điền vào Layma:</b> <span style={{ color: 'var(--neon-cy)', fontFamily: 'var(--font-mono)' }}>{idx < bypassSteps.length - 1 ? `https://serverkey-thanox.pages.dev/?done=${idx + 1}` : 'https://serveripa.proxyvip.click/getkey'}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  const targetUrl = idx < bypassSteps.length - 1 ? `https://serverkey-thanox.pages.dev/?done=${idx + 1}` : 'https://serveripa.proxyvip.click/getkey';
+                  navigator.clipboard.writeText(targetUrl);
+                  alert(`Đã sao chép URL đích:\n${targetUrl}\n\n👉 Hãy dán link này vào ô "Nhập URL cần rút gọn" trên trang Layma!`);
+                }}
+                style={{
+                  background: 'rgba(0, 240, 255, 0.15)',
+                  border: '1px solid var(--border-cy)',
+                  borderRadius: '4px',
+                  color: '#fff',
+                  fontSize: '0.65rem',
+                  padding: '2px 7px',
+                  cursor: 'pointer',
+                  flexShrink: 0,
+                  whiteSpace: 'nowrap'
+                }}
+              >
+                📋 Sao chép
+              </button>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
@@ -419,6 +457,19 @@ function SettingsTab({ token, onAuthError }: { token: string; onAuthError: () =>
             </div>
           </div>
         ))}
+
+        <div className="admin-field" style={{ marginTop: '0.5rem', marginBottom: '1rem' }}>
+          <label className="admin-field-label">Lời nhắn khi khách vượt xong 1 bước quay lại web</label>
+          <input
+            className="admin-input"
+            value={settings.step_success_msg || ''}
+            onChange={(e) => handleChange('step_success_msg', e.target.value)}
+            placeholder="🎉 Đã hoàn thành Bước {step}/{total}! Hãy bấm nút bên dưới để tiếp tục vượt bước tiếp theo."
+          />
+          <div className="admin-field-hint">
+            Thông báo xuất hiện khi khách quay về web sau khi vượt link. ({`{step}`} = số bước vừa xong, {`{total}`} = tổng số bước).
+          </div>
+        </div>
 
         <button
           type="button"

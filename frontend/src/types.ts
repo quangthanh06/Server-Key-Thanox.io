@@ -29,6 +29,7 @@ export interface BypassLink {
   title: string;
   url: string;
   passcode?: string;
+  note?: string;
 }
 
 export interface SystemStats {
@@ -45,6 +46,7 @@ export interface SystemStats {
   guideVideoVpn?: string | null;
   step1BypassUrl?: string | null;
   step1Passcode?: string | null;
+  stepSuccessMsg?: string | null;
   bypassLinks?: BypassLink[];
   adminZalo?: string | null;
   supportLink?: string | null;

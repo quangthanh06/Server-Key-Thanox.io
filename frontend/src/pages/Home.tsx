@@ -38,6 +38,7 @@ export function Home() {
 
   const [passcode, setPasscode] = useState('');
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
+  const [completedSteps, setCompletedSteps] = useState(0);
   const [activeBypassUrl, setActiveBypassUrl] = useState('');
 
   const bypassLinks = (state.stats?.bypassLinks && state.stats.bypassLinks.length > 0)
@@ -49,6 +50,35 @@ export function Home() {
   const totalBypassSteps = bypassLinks.length;
   const currentLink = bypassLinks[currentStepIndex] || bypassLinks[0];
 
+  // Auto-detect completed step on page load (from ?done=1 or ?step=2 or localStorage)
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const doneParam = params.get('done');
+      const stepParam = params.get('step');
+
+      let doneVal = 0;
+      if (doneParam) {
+        doneVal = parseInt(doneParam, 10) || 0;
+      } else if (stepParam) {
+        doneVal = (parseInt(stepParam, 10) || 1) - 1;
+      } else {
+        const saved = localStorage.getItem('thanox_done_step');
+        if (saved) doneVal = parseInt(saved, 10) || 0;
+      }
+
+      if (doneVal > 0 && totalBypassSteps > 0) {
+        setCompletedSteps(doneVal);
+        const nextStep = Math.min(doneVal, totalBypassSteps - 1);
+        setCurrentStepIndex(nextStep);
+        if (doneVal < totalBypassSteps) {
+          const nextLink = bypassLinks[nextStep];
+          setActiveBypassUrl(nextLink?.url || '');
+        }
+      }
+    } catch (_) {}
+  }, [totalBypassSteps]);
+
   const isIpLimitReached = Boolean(
     state.stats && 
     state.stats.ipLimit > 0 && 
@@ -58,22 +88,37 @@ export function Home() {
   const handleActionClick = () => {
     if (isIpLimitReached) return;
 
+    // If user has already completed all steps, go straight to ServerKey
+    if (completedSteps >= totalBypassSteps && totalBypassSteps > 0) {
+      try { localStorage.removeItem('thanox_done_step'); } catch (_) {}
+      actions.completeStep1AndStartStep2();
+      setCompletedSteps(0);
+      setCurrentStepIndex(0);
+      return;
+    }
+
     if (state.status === 'created' || state.status === 'type_selected') {
       if (totalBypassSteps === 0) {
         window.open('https://serveripa.proxyvip.click/getkey', '_blank', 'noopener,noreferrer');
         return;
       }
-      setCurrentStepIndex(0);
-      const firstLink = bypassLinks[0];
-      const targetUrl = firstLink?.url || state.stats?.step1BypassUrl || 'https://thanoxstorebot.shop/?step=1';
+
+      const targetStep = completedSteps > 0 ? Math.min(completedSteps, totalBypassSteps - 1) : 0;
+      setCurrentStepIndex(targetStep);
+      const targetLink = bypassLinks[targetStep];
+      const targetUrl = targetLink?.url || state.stats?.step1BypassUrl || 'https://thanoxstorebot.shop/?step=1';
       setActiveBypassUrl(targetUrl);
-      actions.startBypass(targetUrl, 0, totalBypassSteps, firstLink?.title);
+      actions.startBypass(targetUrl, targetStep, totalBypassSteps, targetLink?.title);
     } else if (state.status === 'step1_pending') {
       const requiredPasscode = currentLink?.passcode?.trim();
       if (requiredPasscode && passcode.trim() !== requiredPasscode) {
         alert(`Mã xác nhận Bước ${currentStepIndex + 1} chưa chính xác! Vui lòng hoàn thành vượt link để lấy mã xác nhận.`);
         return;
       }
+
+      const newDone = currentStepIndex + 1;
+      setCompletedSteps(newDone);
+      try { localStorage.setItem('thanox_done_step', String(newDone)); } catch (_) {}
 
       if (currentStepIndex < totalBypassSteps - 1) {
         const nextIdx = currentStepIndex + 1;
@@ -96,8 +141,10 @@ export function Home() {
         if (state.sessionId) {
           api.completeBypass(state.sessionId, currentStepIndex, true).catch(() => {});
         }
+        try { localStorage.removeItem('thanox_done_step'); } catch (_) {}
         actions.completeStep1AndStartStep2();
         setCurrentStepIndex(0);
+        setCompletedSteps(0);
         setPasscode('');
         setActiveBypassUrl('');
       }
@@ -111,9 +158,16 @@ export function Home() {
       const waitTime = state.stats?.resetFormatted || 'vài tiếng';
       return `🚫 ĐÃ HẾT LƯỢT HÔM NAY (QUAY LẠI SAU ${waitTime.toUpperCase()})`;
     }
+
+    if (completedSteps >= totalBypassSteps && totalBypassSteps > 0) {
+      return `🚀 ĐÃ XONG TẤT CẢ BƯỚC → NHẬN KEY TẠI SERVERKEY`;
+    }
     
     if (state.status === 'created' || state.status === 'type_selected') {
       const typeLabel = (state.proxyType || 'ipa').toUpperCase();
+      if (completedSteps > 0 && completedSteps < totalBypassSteps) {
+        return `⚡ TIẾP TỤC VƯỢT LINK ${completedSteps + 1} (BƯỚC ${completedSteps + 1}/${totalBypassSteps})`;
+      }
       if (totalBypassSteps > 1) {
         return `⚡ BẮT ĐẦU XÁC MINH (BƯỚC 1/${totalBypassSteps}) • ${typeLabel}`;
       }
@@ -173,6 +227,35 @@ export function Home() {
               {/* Package Info — shows 24h key duration & live stats */}
               {state.proxyType && <PackageInfo proxyType={state.proxyType} stats={state.stats} />}
               
+              {/* Step Completion Notice Banner when user finished a step */}
+              {completedSteps > 0 && totalBypassSteps > 0 && (
+                <div className="step-success-box">
+                  <div className="step-success-title">
+                    <span style={{ fontSize: '1.15rem' }}>🎉</span>
+                    <span>ĐÃ VƯỢT XONG BƯỚC {completedSteps}/{totalBypassSteps}!</span>
+                  </div>
+                  <p className="step-success-text">
+                    {state.stats?.stepSuccessMsg
+                      ? state.stats.stepSuccessMsg
+                          .replace('{step}', String(completedSteps))
+                          .replace('{total}', String(totalBypassSteps))
+                      : `Bạn đã vượt xong ${completedSteps} bước rồi! Hãy bấm nút bên dưới để tiếp tục vượt Bước ${Math.min(completedSteps + 1, totalBypassSteps)}.`}
+                  </p>
+                  <div className="step-progress-row">
+                    {bypassLinks.map((_, i) => (
+                      <div key={i} className={`step-dot ${i < completedSteps ? 'done' : i === completedSteps ? 'current' : 'todo'}`}>
+                        <span>{i < completedSteps ? '✓' : i + 1}</span>
+                        <label>{i < completedSteps ? `Xong ${i + 1}` : `Bước ${i + 1}`}</label>
+                      </div>
+                    ))}
+                    <div className={`step-dot ${completedSteps >= totalBypassSteps ? 'done' : 'todo'}`}>
+                      <span>🔑</span>
+                      <label>ServerKey</label>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Step 1..N: Multi-step Bypass Links */}
               {state.status === 'step1_pending' && (
                 <>

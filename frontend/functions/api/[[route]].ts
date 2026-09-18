@@ -3,8 +3,9 @@ const globalSettings: Record<string, string> = {
   step1_bypass_url: 'https://thanoxstorebot.shop/?step=1',
   step1_passcode: '',
   bypass_links_json: JSON.stringify([
-    { id: '1', title: 'Máy chủ xác thực 1', url: 'https://thanoxstorebot.shop/?step=1', passcode: '' }
+    { id: '1', title: 'Máy chủ xác thực 1', url: 'https://thanoxstorebot.shop/?step=1', passcode: '', note: '' }
   ]),
+  step_success_msg: '🎉 Đã hoàn thành Bước {step}/{total}! Hãy bấm nút bên dưới để tiếp tục vượt bước tiếp theo.',
   admin_zalo: '0889696810',
   support_link: 'https://zalo.me/0889696810',
   daily_global_limit: '3000',
@@ -494,6 +495,7 @@ export async function onRequest(context: { request: Request; env: any }) {
           announcement: globalSettings.announcement || null,
           step1BypassUrl: globalSettings.step1_bypass_url || null,
           step1Passcode: globalSettings.step1_passcode || null,
+          stepSuccessMsg: globalSettings.step_success_msg || '🎉 Đã hoàn thành Bước {step}/{total}! Hãy bấm nút bên dưới để tiếp tục vượt bước tiếp theo.',
           bypassLinks: bypassLinks,
           adminZalo: globalSettings.admin_zalo || '0889696810',
           supportLink: globalSettings.support_link || null,
