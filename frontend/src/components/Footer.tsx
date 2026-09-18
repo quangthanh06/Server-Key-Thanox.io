@@ -1,7 +1,8 @@
 import './Footer.css';
 
 export function Footer() {
-  const handleAdminClick = () => {
+  const handleAdminClick = (e?: React.MouseEvent) => {
+    if (e) e.preventDefault();
     window.location.hash = '#/admin';
   };
 
@@ -15,7 +16,12 @@ export function Footer() {
         //SERVERKEY • v2.4
       </span>
       &nbsp;|&nbsp;
-      <a href="https://dtnshop.io.vn/" target="_blank" rel="noopener noreferrer">
+      <a 
+        href="#/admin" 
+        onClick={handleAdminClick}
+        style={{ cursor: 'pointer' }}
+        title="Admin Panel"
+      >
         PROXYVIPVN
       </a>
     </div>

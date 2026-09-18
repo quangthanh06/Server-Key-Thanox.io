@@ -13,7 +13,6 @@ import { ErrorBox } from '../components/ErrorBox';
 import { LoadingOverlay } from '../components/LoadingOverlay';
 import { ActionButton } from '../components/ActionButton';
 import { SessionInfo } from '../components/SessionInfo';
-import { GuideCard } from '../components/GuideCard';
 import { OnlineCounter } from '../components/OnlineCounter';
 import { Footer } from '../components/Footer';
 
@@ -263,13 +262,6 @@ export function Home() {
           <Card title="Thông Tin" tag="// SESSION.INFO">
             <SessionInfo state={state} />
           </Card>
-
-          <GuideCard 
-            videoIpaUrl={state.stats?.guideVideoIpa} 
-            videoVpnUrl={state.stats?.guideVideoVpn} 
-            downloadIpaUrl={state.stats?.downloadIpaUrl}
-            downloadShadowrocketUrl={state.stats?.downloadShadowrocketUrl}
-          />
         </>
       )}
 
