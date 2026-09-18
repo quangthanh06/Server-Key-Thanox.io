@@ -571,7 +571,11 @@ export async function onRequest(context: { request: Request; env: any }) {
       }), { headers: corsHeaders });
     }
 
-    // 6. POST /api/step2/start OR /api/getkey (Calls real ServerKey API)
+    // 6. POST /api/step2/start OR /api/getkey (Records tracking only — user goes directly to ServerKey)
+    // NOTE: We do NOT proxy the ServerKey API call here anymore.
+    // Proxying caused IP mismatch: ServerKey bound the link to Cloudflare's server IP,
+    // not the user's real IP, causing "Link không dành cho thiết bị của bạn" error.
+    // The user's browser opens serveripa.proxyvip.click/getkey directly.
     if ((path.endsWith('/step2/start') || path.endsWith('/getkey')) && request.method === 'POST') {
       let body: any = {};
       try { body = await request.json(); } catch (_) {}
@@ -581,43 +585,20 @@ export async function onRequest(context: { request: Request; env: any }) {
       recordSessionEvent(sid, request, clientIp, {
         proxyType: keyType,
         step: 'step2',
-        statusLabel: '🚀 Đang vượt ServerKey',
+        statusLabel: '🚀 Đang vượt ServerKey (trực tiếp)',
         badgeClass: 'step2_pending'
       });
 
-      const res = await fetch('https://serveripa.proxyvip.click/api/getkey', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'CF-Connecting-IP': clientIp,
-          'X-Forwarded-For': clientIp,
-          'X-Real-IP': clientIp
+      return new Response(JSON.stringify({
+        success: true,
+        data: {
+          flowUrl: 'https://serveripa.proxyvip.click/getkey',
+          url: 'https://serveripa.proxyvip.click/getkey',
+          ok: true,
+          message: 'User sẽ được chuyển trực tiếp tới ServerKey page'
         },
-        body: JSON.stringify({ keyType })
-      });
-
-      const data = await res.json() as any;
-      if (data && data.ok && data.url) {
-        return new Response(JSON.stringify({
-          success: true,
-          data: {
-            flowUrl: data.url,
-            url: data.url,
-            ok: true,
-            provider: data.provider || 'gtraffic'
-          },
-          error: null
-        }), { headers: corsHeaders });
-      } else {
-        return new Response(JSON.stringify({
-          success: false,
-          data: null,
-          error: {
-            code: 'SERVERKEY_ERROR',
-            message: data?.msg || 'Hệ thống ServerKey đang bảo trì hoặc hết lượt hôm nay.'
-          }
-        }), { status: 400, headers: corsHeaders });
-      }
+        error: null
+      }), { headers: corsHeaders });
     }
 
     // 7. POST /api/key/claim (User successfully finished and got key)

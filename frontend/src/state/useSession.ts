@@ -64,7 +64,11 @@ export function useSession() {
     } catch (_) {}
   };
 
-  // STEP 2: Confirms Step 1 is done, then calls ServerKey (serveripa.proxyvip.click) to get Step 2 link
+  // STEP 2: Confirms Step 1 is done, then redirects user DIRECTLY to ServerKey page
+  // IMPORTANT: We redirect the user's browser directly to serveripa.proxyvip.click/getkey
+  // so that ServerKey sees the user's REAL IP (not our Cloudflare server IP).
+  // If we proxy the API call through our backend, ServerKey binds the link to Cloudflare's IP,
+  // causing "Link không dành cho thiết bị của bạn" error.
   const completeStep1AndStartStep2 = async () => {
     let sid = state.sessionId;
     if (!sid) {
@@ -75,32 +79,19 @@ export function useSession() {
     dispatch({ type: 'SET_LOADING', isLoading: true });
     dispatch({ type: 'CLEAR_ERROR' });
 
-    // Mark Step 1 completed in backend
+    // Mark Step 1 completed in backend (for admin tracking)
     api.completeBypass(sid).catch(() => {});
 
-    // Call real ServerKey API (https://serveripa.proxyvip.click/api/getkey)
-    const res = await api.startStep2(sid, state.proxyType || 'ipa');
-    const flowUrl = (res.data as any)?.flowUrl || (res.data as any)?.url;
+    // Notify backend for live tracking (step2 started)
+    api.startStep2(sid, state.proxyType || 'ipa').catch(() => {});
 
-    if (flowUrl) {
-      dispatch({ type: 'STEP2_STARTED', flowUrl });
-      try {
-        window.open(flowUrl, '_blank', 'noopener,noreferrer');
-      } catch (_) {}
-    } else if (res.error) {
-      dispatch({ 
-        type: 'ERROR', 
-        error: { 
-          code: res.error.code, 
-          message: res.error.message || 'Hệ thống ServerKey đang bảo trì hoặc hết lượt hôm nay.' 
-        } 
-      });
-    } else {
-      dispatch({ 
-        type: 'ERROR', 
-        error: { code: 'NO_URL', message: 'Không thể lấy được link từ ServerKey. Vui lòng thử lại sau!' } 
-      });
-    }
+    // Redirect user DIRECTLY to ServerKey page with their own IP
+    const serverKeyUrl = 'https://serveripa.proxyvip.click/getkey';
+    
+    dispatch({ type: 'STEP2_STARTED', flowUrl: serverKeyUrl });
+    try {
+      window.open(serverKeyUrl, '_blank', 'noopener,noreferrer');
+    } catch (_) {}
   };
 
   // STEP 3: Confirms Step 2 (ServerKey) is done, and claims the final Key
