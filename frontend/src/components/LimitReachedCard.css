@@ -1,0 +1,200 @@
+﻿.pk-limit-card {
+  border: 1px solid rgba(255, 61, 138, 0.45);
+  background: linear-gradient(180deg, rgba(26, 10, 20, 0.95), rgba(15, 10, 26, 0.95));
+  box-shadow: 0 0 25px rgba(255, 61, 138, 0.15), inset 0 0 15px rgba(255, 61, 138, 0.05);
+  margin-bottom: 1.25rem;
+  animation: fadein 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.pk-limit-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--neon-pk), var(--neon-yl), transparent);
+}
+
+.pk-limit-badge {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  color: var(--neon-pk);
+  background: rgba(255, 61, 138, 0.12);
+  border: 1px solid rgba(255, 61, 138, 0.3);
+  padding: 3px 8px;
+  border-radius: 4px;
+  display: inline-block;
+  margin-bottom: 0.75rem;
+  letter-spacing: 0.08em;
+}
+
+.pk-limit-head {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  margin-bottom: 1.1rem;
+}
+
+.pk-limit-icon {
+  font-size: 2rem;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 61, 138, 0.12);
+  border: 1px solid rgba(255, 61, 138, 0.35);
+  border-radius: 8px;
+  flex-shrink: 0;
+  box-shadow: 0 0 12px rgba(255, 61, 138, 0.2);
+}
+
+.pk-limit-title-wrap {
+  flex: 1;
+}
+
+.pk-limit-title {
+  font-family: var(--font-brand);
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 0.04em;
+  margin: 0 0 0.25rem;
+  text-shadow: 0 0 8px rgba(255, 61, 138, 0.5);
+}
+
+.pk-limit-sub {
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  margin: 0;
+  line-height: 1.4;
+}
+
+.pk-limit-timer-container {
+  background: rgba(5, 6, 15, 0.7);
+  border: 1px dashed rgba(245, 255, 61, 0.35);
+  border-radius: 8px;
+  padding: 1rem 0.75rem;
+  text-align: center;
+  margin-bottom: 1.1rem;
+}
+
+.pk-limit-timer-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--neon-yl);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 0.75rem;
+}
+
+.pk-limit-pulse-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--neon-yl);
+  box-shadow: 0 0 6px var(--neon-yl);
+  animation: pulse 1.5s infinite;
+}
+
+.pk-limit-clock-grid {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  margin-bottom: 0.75rem;
+}
+
+.pk-clock-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: rgba(10, 15, 30, 0.9);
+  border: 1px solid rgba(0, 240, 255, 0.25);
+  border-radius: 6px;
+  padding: 0.4rem 0.65rem;
+  min-width: 54px;
+  box-shadow: inset 0 0 8px rgba(0, 240, 255, 0.08);
+}
+
+.pk-clock-digit {
+  font-family: var(--font-mono);
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--neon-cy);
+  line-height: 1.1;
+  text-shadow: 0 0 10px rgba(0, 240, 255, 0.6);
+}
+
+.pk-clock-unit {
+  font-size: 0.58rem;
+  color: var(--text-dim);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  margin-top: 2px;
+}
+
+.pk-clock-sep {
+  font-family: var(--font-mono);
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: var(--neon-yl);
+  margin-bottom: 12px;
+  text-shadow: 0 0 6px rgba(245, 255, 61, 0.5);
+}
+
+.pk-limit-reset-hint {
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  line-height: 1.4;
+}
+
+.pk-limit-reset-hint b {
+  color: var(--neon-yl);
+}
+
+.pk-limit-footer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  text-align: center;
+}
+
+.pk-limit-help-text {
+  font-size: 0.72rem;
+  color: var(--text-dim);
+}
+
+.pk-limit-zalo-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.7rem 1rem;
+  background: linear-gradient(135deg, rgba(0, 104, 255, 0.25), rgba(0, 168, 255, 0.15));
+  border: 1px solid rgba(0, 168, 255, 0.45);
+  border-radius: 6px;
+  color: #fff;
+  font-family: var(--font-brand);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  box-shadow: 0 0 12px rgba(0, 168, 255, 0.2);
+}
+
+.pk-limit-zalo-btn:hover {
+  background: linear-gradient(135deg, rgba(0, 104, 255, 0.4), rgba(0, 168, 255, 0.3));
+  box-shadow: 0 0 18px rgba(0, 168, 255, 0.4);
+  transform: translateY(-1px);
+}

@@ -1,0 +1,21 @@
+.pk-loading {
+  text-align: center;
+  padding: 1.25rem 1rem;
+}
+
+.pk-spinner {
+  width: 34px;
+  height: 34px;
+  border: 2.5px solid rgba(0, 240, 255, 0.2);
+  border-top-color: var(--neon-cy);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  margin: 0 auto 0.75rem;
+  box-shadow: 0 0 10px rgba(0, 240, 255, 0.3);
+}
+
+.pk-loading-text {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  letter-spacing: 0.05em;
+}

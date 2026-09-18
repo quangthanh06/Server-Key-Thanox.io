@@ -1,0 +1,16 @@
+.pk-footer {
+  text-align: center;
+  font-size: 0.72rem;
+  color: var(--text-mute);
+  letter-spacing: 0.3px;
+  padding: 1rem 0 2rem;
+  user-select: none;
+  font-family: var(--font-main);
+}
+
+.pk-footer-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}

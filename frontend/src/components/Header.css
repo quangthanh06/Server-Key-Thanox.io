@@ -1,0 +1,58 @@
+.pk-header {
+  text-align: center;
+  margin-bottom: 0.5rem;
+  animation: fadein 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.pk-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-family: var(--font-heading);
+  font-weight: 700;
+  color: var(--neon-cy);
+  font-size: 0.76rem;
+  letter-spacing: 0.08em;
+  padding: 0.35rem 0.95rem;
+  background: rgba(0, 240, 255, 0.08);
+  border: 1px solid rgba(0, 240, 255, 0.25);
+  border-radius: 999px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  text-shadow: 0 0 10px rgba(0, 240, 255, 0.4);
+}
+
+.pk-pulse {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--neon-gr);
+  box-shadow: 0 0 8px var(--neon-gr), 0 0 14px var(--neon-gr);
+  animation: pulse 1.5s infinite;
+}
+
+.pk-brand-text {
+  font-family: var(--font-heading);
+  text-transform: uppercase;
+}
+
+.pk-title {
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 1.85rem;
+  color: #fff;
+  letter-spacing: -0.02em;
+  margin: 0.75rem 0 0.3rem;
+  background: linear-gradient(135deg, #ffffff 40%, #cffafe 80%, #67e8f9 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 2px 14px rgba(0, 240, 255, 0.25));
+}
+
+.pk-subtitle {
+  font-size: 0.82rem;
+  color: var(--text-dim);
+  letter-spacing: 0.01em;
+  font-weight: 500;
+  margin: 0;
+}

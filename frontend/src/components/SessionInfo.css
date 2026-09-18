@@ -1,0 +1,45 @@
+.stats-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.05rem;
+}
+
+.stat-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid rgba(0, 240, 255, 0.08);
+}
+
+.stat-row:last-child {
+  border-bottom: none;
+}
+
+.stat-label {
+  color: var(--text-dim);
+  font-size: 0.75rem;
+}
+
+.stat-value {
+  font-weight: 700;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--neon-cy);
+}
+
+.stat-value-green {
+  color: var(--neon-gr);
+  text-shadow: 0 0 6px rgba(0, 255, 136, 0.35);
+}
+
+.stat-value-yellow {
+  color: var(--warn);
+  text-shadow: 0 0 6px rgba(245, 255, 61, 0.35);
+}
+
+.stat-value-rose {
+  color: var(--danger);
+  text-shadow: 0 0 6px rgba(255, 61, 138, 0.35);
+}

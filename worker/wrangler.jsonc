@@ -1,0 +1,31 @@
+{
+  "name": "proxy-key-worker",
+  "main": "src/index.ts",
+  "compatibility_date": "2024-06-01",
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "proxy-key-db",
+      "database_id": "YOUR_D1_DATABASE_ID"
+    }
+  ],
+  "vars": {
+    "BRAND_NAME": "THANOX STORE",
+    "SITE_TITLE": "GET.KEY // THANOX STORE",
+    "VERSION": "2.0.0",
+    "STEP1_BYPASS_URL": "https://example.com/my-bypass",
+    "DAILY_GLOBAL_LIMIT": "3000",
+    "DAILY_IP_LIMIT": "2",
+    "KEY_DURATION": "86400",
+    "REQUESTS_PER_MINUTE": "30",
+    "EXTERNAL_BASE_URL": "https://serveripa.proxyvip.click",
+    "EXTERNAL_GETKEY_ENDPOINT": "/api/getkey",
+    "EXTERNAL_STATS_ENDPOINT": "/api/getkey/stats"
+  },
+  "routes": [
+    {
+      "pattern": "thanoxstorebot.shop/api/*",
+      "zone_name": "thanoxstorebot.shop"
+    }
+  ]
+}

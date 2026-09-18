@@ -1,0 +1,122 @@
+.pk-type-wrap {
+  margin-bottom: 1.25rem;
+}
+
+.pk-type-label {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--neon-cy);
+  letter-spacing: 0.08em;
+  margin-bottom: 0.6rem;
+  text-transform: uppercase;
+}
+
+.pk-type-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.pk-type-btn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.85rem 0.9rem;
+  background: rgba(10, 14, 28, 0.75);
+  border: 1px solid var(--border-dim);
+  border-radius: 10px;
+  color: var(--text-dim);
+  font-family: var(--font-main);
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+}
+
+.pk-type-btn:hover:not(:disabled) {
+  border-color: var(--neon-cy);
+  color: #fff;
+  background: rgba(0, 240, 255, 0.08);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 14px rgba(0, 240, 255, 0.15);
+}
+
+.pk-type-btn:focus-visible {
+  outline: 2px solid var(--neon-cy);
+  outline-offset: 2px;
+}
+
+.pk-type-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pk-type-btn.active {
+  border-color: var(--neon-cy);
+  background: linear-gradient(135deg, rgba(0, 240, 255, 0.18), rgba(0, 240, 255, 0.04));
+  color: #fff;
+  box-shadow: 0 0 20px rgba(0, 240, 255, 0.25), inset 0 0 12px rgba(0, 240, 255, 0.1);
+}
+
+.pk-type-btn.vpn.active {
+  border-color: var(--border-mg);
+  background: linear-gradient(135deg, rgba(255, 0, 212, 0.2), rgba(255, 0, 212, 0.04));
+  box-shadow: 0 0 20px rgba(255, 0, 212, 0.3), inset 0 0 12px rgba(255, 0, 212, 0.12);
+}
+
+.pk-type-icon {
+  font-size: 1.45rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.pk-type-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.pk-type-name {
+  font-family: var(--font-heading);
+  font-size: 0.88rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.pk-type-btn.active .pk-type-name {
+  color: #fff;
+}
+
+.pk-type-tag {
+  font-size: 0.66rem;
+  color: var(--text-mute);
+  margin-top: 2px;
+  font-weight: 500;
+}
+
+.pk-type-btn.active .pk-type-tag {
+  color: var(--neon-cy);
+}
+
+.pk-type-btn.vpn.active .pk-type-tag {
+  color: var(--neon-mg);
+}
+
+.pk-type-check {
+  font-size: 0.85rem;
+  font-weight: bold;
+  color: var(--neon-gr);
+  flex-shrink: 0;
+}
+
+@media (max-width: 440px) {
+  .pk-type-grid {
+    grid-template-columns: 1fr;
+    gap: 0.55rem;
+  }
+}

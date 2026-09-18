@@ -1,0 +1,74 @@
+/* Sleek Cyber Dark Tech Background (Matching ServerKey proxyvip theme) */
+.pk-cyber-bg {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 0;
+  background-color: #060812;
+}
+
+/* Focused Top Cyan/Sapphire Glow */
+.pk-bg-top-glow {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 900px;
+  height: 480px;
+  background: radial-gradient(ellipse 650px 300px at 50% -30px, rgba(0, 240, 255, 0.16) 0%, rgba(59, 130, 246, 0.08) 50%, transparent 80%);
+  filter: blur(40px);
+  -webkit-filter: blur(40px);
+  animation: glowBreathe 6s ease-in-out infinite alternate;
+}
+
+/* Crisp Cyber Grid (Tech Proxy / Gaming aesthetic) */
+.pk-bg-grid {
+  position: absolute;
+  inset: 0;
+  background-size: 38px 38px;
+  background-image: 
+    linear-gradient(to right, rgba(0, 240, 255, 0.045) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 240, 255, 0.045) 1px, transparent 1px);
+  mask-image: radial-gradient(ellipse 85% 75% at 50% 30%, black 40%, transparent 90%);
+  -webkit-mask-image: radial-gradient(ellipse 85% 75% at 50% 30%, black 40%, transparent 90%);
+}
+
+/* Vignette to focus contrast on center card */
+.pk-bg-vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 35%, transparent 30%, rgba(6, 8, 18, 0.85) 100%);
+}
+
+/* Subtle Tech Scanline effect */
+.pk-bg-scanline {
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 3px,
+    rgba(0, 240, 255, 0.012) 3px,
+    rgba(0, 240, 255, 0.012) 4px
+  );
+  opacity: 0.6;
+}
+
+@keyframes glowBreathe {
+  0% {
+    opacity: 0.75;
+    transform: translateX(-50%) scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(-50%) scale(1.05);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pk-bg-top-glow {
+    animation: none !important;
+  }
+}

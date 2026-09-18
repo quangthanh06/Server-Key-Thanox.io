@@ -1,0 +1,12 @@
+{
+  "name": "thanox-store-proxy-key",
+  "version": "1.0.0",
+  "private": true,
+  "description": "THANOX STORE - Hệ thống cấp Key Proxy tự động 2 bước liên kết ServerKey",
+  "scripts": {
+    "dev:frontend": "npm --prefix frontend run dev",
+    "dev:worker": "npm --prefix worker run dev",
+    "build": "npm --prefix frontend run build",
+    "test": "npm --prefix worker test"
+  }
+}
