@@ -23,9 +23,9 @@ export function useSession() {
   };
 
   // STEP 1: Create session and start Link 1 bypass
-  const startBypass = async () => {
+  const startBypass = async (customUrl?: string, stepIndex = 0, totalSteps = 1, stepTitle?: string) => {
     // Immediate pre-check if IP limit is already reached
-    if (state.stats && state.stats.ipUsed >= state.stats.ipLimit) {
+    if (state.stats && state.stats.ipLimit > 0 && state.stats.ipUsed >= state.stats.ipLimit) {
       dispatch({
         type: 'ERROR',
         error: {
@@ -55,8 +55,8 @@ export function useSession() {
     const currentType = state.proxyType || 'ipa';
     api.selectType(sid, currentType).catch(() => {});
     
-    const res = await api.startBypass(sid);
-    const bypassUrl = res.data?.redirectUrl || 'https://thanoxstorebot.shop/?step=1';
+    const res = await api.startBypass(sid, stepIndex, totalSteps, stepTitle);
+    const bypassUrl = customUrl || res.data?.redirectUrl || 'https://thanoxstorebot.shop/?step=1';
     
     dispatch({ type: 'STEP1_STARTED', bypassUrl });
     try {

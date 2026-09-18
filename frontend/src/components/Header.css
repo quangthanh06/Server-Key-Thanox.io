@@ -47,3 +47,19 @@
 .logo-sub b {
   color: var(--neon-yl);
 }
+
+@media (max-width: 480px) {
+  .logo-wrap {
+    margin-bottom: 1.15rem;
+  }
+  .brand {
+    font-size: 0.85rem;
+  }
+  .logo-title {
+    font-size: 1.35rem;
+    margin: 0.5rem 0 0.15rem;
+  }
+  .logo-sub {
+    font-size: 0.68rem;
+  }
+}

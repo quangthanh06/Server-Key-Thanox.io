@@ -112,9 +112,25 @@
   display: block;
 }
 
-@media (max-width: 440px) {
+@media (max-width: 480px) {
   .type-selector-grid {
-    grid-template-columns: 1fr;
-    gap: 0.55rem;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+  }
+  .type-btn {
+    padding: 0.65rem 0.5rem;
+    gap: 0.4rem;
+  }
+  .type-btn-icon {
+    font-size: 1.15rem;
+  }
+  .type-btn-name {
+    font-size: 0.78rem;
+  }
+  .type-btn-tag {
+    font-size: 0.58rem;
+  }
+  .type-check-badge {
+    font-size: 0.75rem;
   }
 }

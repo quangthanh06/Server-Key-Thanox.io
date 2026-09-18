@@ -180,12 +180,19 @@ function DashboardTab({ token, onAuthError }: { token: string; onAuthError: () =
             </thead>
             <tbody>
               <tr>
-                <td>Link Vượt Bước 1</td>
-                <td style={{ color: '#00f0ff', maxWidth: 300, overflow: 'hidden', textOverflow: 'ellipsis' }}>{settings.step1_bypass_url || '—'}</td>
-              </tr>
-              <tr>
-                <td>Mã Xác Nhận Bước 1</td>
-                <td style={{ color: 'var(--neon-yl)', fontFamily: 'monospace' }}>{settings.step1_passcode || '(Không bắt buộc)'}</td>
+                <td>Chuỗi Link Vượt</td>
+                <td style={{ color: '#00f0ff' }}>
+                  {(() => {
+                    let steps = [];
+                    try {
+                      if (settings.bypass_links_json) steps = JSON.parse(settings.bypass_links_json);
+                    } catch (_) {}
+                    if (!steps || steps.length === 0) {
+                      return settings.step1_bypass_url ? '1 bước (Link 1 → ServerKey)' : 'Chuyển thẳng ServerKey';
+                    }
+                    return `${steps.length} bước (${steps.map((_: any, i: number) => `Link ${i+1}`).join(' → ')} → ServerKey)`;
+                  })()}
+                </td>
               </tr>
               <tr>
                 <td>Số Zalo Hỗ Trợ</td>
@@ -234,6 +241,9 @@ function DashboardTab({ token, onAuthError }: { token: string; onAuthError: () =
 /* ============ Settings Tab ============ */
 function SettingsTab({ token, onAuthError }: { token: string; onAuthError: () => void }) {
   const [settings, setSettings] = useState<Record<string, string>>({});
+  const [bypassSteps, setBypassSteps] = useState<Array<{ id: string; title: string; url: string; passcode?: string }>>([
+    { id: '1', title: 'Máy chủ xác thực 1', url: 'https://thanoxstorebot.shop/?step=1', passcode: '' }
+  ]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
@@ -251,6 +261,21 @@ function SettingsTab({ token, onAuthError }: { token: string; onAuthError: () =>
         localStorage.setItem('thanox_settings', JSON.stringify(merged));
         return merged;
       });
+
+      let list: any[] = [];
+      try {
+        if (res.data.bypass_links_json) {
+          list = JSON.parse(res.data.bypass_links_json);
+        }
+      } catch (_) {}
+      if (!Array.isArray(list) || list.length === 0) {
+        if (res.data.step1_bypass_url) {
+          list = [{ id: '1', title: 'Máy chủ xác thực 1', url: res.data.step1_bypass_url, passcode: res.data.step1_passcode || '' }];
+        }
+      }
+      if (list.length > 0) {
+        setBypassSteps(list);
+      }
     } else if (res.error?.code === 'UNAUTHORIZED') {
       onAuthError();
     }
@@ -264,14 +289,45 @@ function SettingsTab({ token, onAuthError }: { token: string; onAuthError: () =>
     setSaveMsg(null);
   };
 
+  const handleAddStep = () => {
+    setBypassSteps((prev) => [
+      ...prev,
+      {
+        id: Date.now().toString(),
+        title: `Máy chủ xác thực ${prev.length + 1}`,
+        url: '',
+        passcode: ''
+      }
+    ]);
+  };
+
+  const handleUpdateStep = (index: number, field: string, val: string) => {
+    setBypassSteps((prev) => {
+      const copy = [...prev];
+      copy[index] = { ...copy[index], [field]: val };
+      return copy;
+    });
+  };
+
+  const handleRemoveStep = (index: number) => {
+    setBypassSteps((prev) => prev.filter((_, i) => i !== index));
+  };
+
   const handleSave = async () => {
     setSaving(true);
     setSaveMsg(null);
+    const updatedSettings = {
+      ...settings,
+      bypass_links_json: JSON.stringify(bypassSteps),
+      step1_bypass_url: bypassSteps[0]?.url || '',
+      step1_passcode: bypassSteps[0]?.passcode || ''
+    };
+
     try {
-      localStorage.setItem('thanox_settings', JSON.stringify(settings));
+      localStorage.setItem('thanox_settings', JSON.stringify(updatedSettings));
     } catch (_) {}
 
-    const res = await adminApi.updateSettings(token, settings);
+    const res = await adminApi.updateSettings(token, updatedSettings);
     if (res.error && res.error.code !== 'UNAUTHORIZED') {
       setSaveMsg({ text: '✓ Đã lưu cài đặt thành công (Đã cập nhật hệ thống)!', type: 'success' });
     } else if (res.error?.code === 'UNAUTHORIZED') {
@@ -294,28 +350,96 @@ function SettingsTab({ token, onAuthError }: { token: string; onAuthError: () =>
     <>
       <div className="admin-section">
         <div className="admin-section-title">
-          <span className="tag">// BYPASS</span> Link Vượt Bước 1 & Chống Vượt Ảo
+          <span className="tag">// BYPASS</span> Chuỗi Link Vượt Đa Bước (Multi-Step Bypass)
         </div>
-        <div className="admin-field">
-          <label className="admin-field-label">URL Vượt Link Bước 1</label>
-          <input
-            className="admin-input"
-            value={settings.step1_bypass_url || ''}
-            onChange={(e) => handleChange('step1_bypass_url', e.target.value)}
-            placeholder="https://gtraffic.io/... hoặc linkvertise, go-link, v.v."
-          />
-          <div className="admin-field-hint">Người dùng phải bấm mở link này ở Bước 1 trước khi được chuyển sang ServerKey.</div>
+        <div style={{ color: 'var(--text-dim)', fontSize: '0.78rem', marginBottom: '1.25rem', lineHeight: '1.5' }}>
+          💡 Bạn có thể thêm bao nhiêu link vượt tùy ý (Link 1 của bạn, Link 2 của bạn bè, Link 3...). Người dùng sẽ vượt lần lượt theo thứ tự, và <b>bước cuối cùng sẽ tự động chuyển sang ServerKey để lấy key</b>. Toàn bộ các bước đều chạy trên IP của khách nên không bao giờ bị lỗi thiết bị!
         </div>
-        <div className="admin-field">
-          <label className="admin-field-label">Mã Xác Nhận Bước 1 (Passcode Chống Skip Link)</label>
-          <input
-            className="admin-input"
-            value={settings.step1_passcode || ''}
-            onChange={(e) => handleChange('step1_passcode', e.target.value)}
-            placeholder="Ví dụ: THANOXVIP88 (để trống nếu không bắt buộc nhập mã)"
-          />
-          <div className="admin-field-hint">Nếu bạn đặt mã này, khách bắt buộc phải nhập đúng mã mới được bấm chuyển qua Bước 2 (ServerKey)!</div>
-        </div>
+
+        {bypassSteps.map((step, idx) => (
+          <div key={step.id || idx} style={{
+            background: 'rgba(10, 15, 30, 0.6)',
+            border: '1px solid rgba(0, 240, 255, 0.2)',
+            borderRadius: '8px',
+            padding: '1rem',
+            marginBottom: '1rem'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+              <span style={{ fontFamily: 'var(--font-brand)', color: 'var(--neon-cy)', fontSize: '0.85rem', fontWeight: 700 }}>
+                🔗 BƯỚC {idx + 1} {idx === 0 ? '(Link chính của bạn)' : `(Link tiếp theo ${idx + 1})`}
+              </span>
+              {bypassSteps.length > 1 && (
+                <button
+                  type="button"
+                  onClick={() => handleRemoveStep(idx)}
+                  style={{
+                    background: 'rgba(255, 61, 138, 0.15)',
+                    border: '1px solid rgba(255, 61, 138, 0.4)',
+                    color: 'var(--neon-pk)',
+                    borderRadius: '4px',
+                    padding: '3px 8px',
+                    fontSize: '0.7rem',
+                    cursor: 'pointer'
+                  }}
+                >
+                  🗑️ Xóa bước này
+                </button>
+              )}
+            </div>
+
+            <div className="admin-field" style={{ marginBottom: '0.65rem' }}>
+              <label className="admin-field-label">URL Vượt Link Bước {idx + 1}</label>
+              <input
+                className="admin-input"
+                value={step.url || ''}
+                onChange={(e) => handleUpdateStep(idx, 'url', e.target.value)}
+                placeholder="https://linkvertise.com/... hoặc https://gtraffic.io/..."
+              />
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+              <div className="admin-field" style={{ margin: 0 }}>
+                <label className="admin-field-label">Tên hiển thị (Tùy chọn)</label>
+                <input
+                  className="admin-input"
+                  value={step.title || ''}
+                  onChange={(e) => handleUpdateStep(idx, 'title', e.target.value)}
+                  placeholder={`Máy chủ xác thực ${idx + 1}`}
+                />
+              </div>
+              <div className="admin-field" style={{ margin: 0 }}>
+                <label className="admin-field-label">Mã Xác Nhận / Passcode (Tùy chọn)</label>
+                <input
+                  className="admin-input"
+                  value={step.passcode || ''}
+                  onChange={(e) => handleUpdateStep(idx, 'passcode', e.target.value)}
+                  placeholder="Để trống nếu không cần mã"
+                />
+              </div>
+            </div>
+          </div>
+        ))}
+
+        <button
+          type="button"
+          onClick={handleAddStep}
+          style={{
+            width: '100%',
+            padding: '0.75rem',
+            background: 'rgba(0, 240, 255, 0.08)',
+            border: '1px dashed var(--neon-cy)',
+            borderRadius: '6px',
+            color: 'var(--neon-cy)',
+            fontFamily: 'var(--font-brand)',
+            fontSize: '0.8rem',
+            fontWeight: 700,
+            cursor: 'pointer',
+            marginBottom: '1rem',
+            transition: 'all 0.2s ease'
+          }}
+        >
+          ➕ THÊM BƯỚC VƯỢT LINK TIẾP THEO (Thêm Link {bypassSteps.length + 1})
+        </button>
       </div>
 
       <div className="admin-section">

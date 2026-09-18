@@ -121,7 +121,8 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 @media (max-width: 480px) {
-  body { padding: 1.5rem 0.85rem 2rem; }
+  body { padding: 1.25rem 0.75rem 2rem; }
+  .wrap, .pk-wrap { width: 100%; max-width: 100%; }
 }
 
 @media (prefers-reduced-motion: reduce) {

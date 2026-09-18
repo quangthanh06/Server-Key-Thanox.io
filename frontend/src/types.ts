@@ -24,6 +24,13 @@ export interface SessionState {
   isLoading: boolean;
 }
 
+export interface BypassLink {
+  id: string;
+  title: string;
+  url: string;
+  passcode?: string;
+}
+
 export interface SystemStats {
   dailyUsed: number;
   dailyLimit: number;
@@ -38,6 +45,7 @@ export interface SystemStats {
   guideVideoVpn?: string | null;
   step1BypassUrl?: string | null;
   step1Passcode?: string | null;
+  bypassLinks?: BypassLink[];
   adminZalo?: string | null;
   supportLink?: string | null;
   brandName?: string | null;

@@ -2,6 +2,9 @@
 const globalSettings: Record<string, string> = {
   step1_bypass_url: 'https://thanoxstorebot.shop/?step=1',
   step1_passcode: '',
+  bypass_links_json: JSON.stringify([
+    { id: '1', title: 'Máy chủ xác thực 1', url: 'https://thanoxstorebot.shop/?step=1', passcode: '' }
+  ]),
   admin_zalo: '0889696810',
   support_link: 'https://zalo.me/0889696810',
   daily_global_limit: '3000',
@@ -465,6 +468,20 @@ export async function onRequest(context: { request: Request; env: any }) {
       const dailyLimit = parseInt(globalSettings.daily_global_limit || '3000', 10);
       const ipLimit = parseInt(globalSettings.daily_ip_limit || '2', 10);
 
+      let bypassLinks: any[] = [];
+      try {
+        if (globalSettings.bypass_links_json) {
+          bypassLinks = JSON.parse(globalSettings.bypass_links_json);
+        }
+      } catch (_) {}
+      if (!Array.isArray(bypassLinks) || bypassLinks.length === 0) {
+        if (globalSettings.step1_bypass_url) {
+          bypassLinks = [
+            { id: '1', title: 'Máy chủ xác thực 1', url: globalSettings.step1_bypass_url, passcode: globalSettings.step1_passcode || '' }
+          ];
+        }
+      }
+
       return new Response(JSON.stringify({
         success: true,
         data: {
@@ -477,6 +494,7 @@ export async function onRequest(context: { request: Request; env: any }) {
           announcement: globalSettings.announcement || null,
           step1BypassUrl: globalSettings.step1_bypass_url || null,
           step1Passcode: globalSettings.step1_passcode || null,
+          bypassLinks: bypassLinks,
           adminZalo: globalSettings.admin_zalo || '0889696810',
           supportLink: globalSettings.support_link || null,
           brandName: globalSettings.brand_name || 'THANOX STORE',
@@ -529,15 +547,18 @@ export async function onRequest(context: { request: Request; env: any }) {
       }), { headers: corsHeaders });
     }
 
-    // 4. POST /api/bypass/start (Step 1: Admin bypass link)
+    // 4. POST /api/bypass/start (Multi-step bypass link start)
     if (path.endsWith('/bypass/start') && request.method === 'POST') {
       let body: any = {};
       try { body = await request.json(); } catch (_) {}
       const sid = body.sessionId;
+      const stepIndex = typeof body.stepIndex === 'number' ? body.stepIndex : 0;
+      const totalSteps = typeof body.totalSteps === 'number' ? body.totalSteps : 1;
+      const stepTitle = body.stepTitle || `Link ${stepIndex + 1}`;
 
       recordSessionEvent(sid, request, clientIp, {
         step: 'step1',
-        statusLabel: '🟡 Đang vượt Link 1 (Admin)',
+        statusLabel: totalSteps > 1 ? `🟡 Đang vượt Link ${stepIndex + 1}/${totalSteps}` : `🟡 Đang vượt Link 1`,
         badgeClass: 'step1_pending'
       });
 
@@ -546,21 +567,24 @@ export async function onRequest(context: { request: Request; env: any }) {
         success: true,
         data: {
           redirectUrl: step1Url,
+          stepIndex,
           expiresAt: Date.now() + 10 * 60 * 1000
         },
         error: null
       }), { headers: corsHeaders });
     }
 
-    // 5. POST /api/bypass/complete (Step 1 completed)
+    // 5. POST /api/bypass/complete (Bypass step completed)
     if (path.endsWith('/bypass/complete') && request.method === 'POST') {
       let body: any = {};
       try { body = await request.json(); } catch (_) {}
       const sid = body.sessionId;
+      const stepIndex = typeof body.stepIndex === 'number' ? body.stepIndex : 0;
+      const isFinal = Boolean(body.isFinal);
 
       recordSessionEvent(sid, request, clientIp, {
-        step: 'step1_done',
-        statusLabel: '🟢 Đã vượt xong Link 1',
+        step: isFinal ? 'step1_done' : 'step1',
+        statusLabel: isFinal ? '🟢 Đã xong tất cả link vượt' : `🟢 Đã xong Link ${stepIndex + 1}`,
         badgeClass: 'step1_completed'
       });
 

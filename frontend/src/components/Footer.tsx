@@ -16,14 +16,9 @@ export function Footer() {
         //SERVERKEY • v2.4
       </span>
       &nbsp;|&nbsp;
-      <a 
-        href="#/admin" 
-        onClick={handleAdminClick}
-        style={{ cursor: 'pointer' }}
-        title="Admin Panel"
-      >
+      <span style={{ color: 'var(--neon-cy)' }}>
         PROXYVIPVN
-      </a>
+      </span>
     </div>
   );
 }
