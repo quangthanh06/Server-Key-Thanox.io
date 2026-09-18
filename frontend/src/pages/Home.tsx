@@ -108,6 +108,9 @@ export function Home() {
       const targetLink = bypassLinks[targetStep];
       const targetUrl = targetLink?.url || state.stats?.step1BypassUrl || 'https://thanoxstorebot.shop/?step=1';
       setActiveBypassUrl(targetUrl);
+      try {
+        localStorage.setItem('thanox_done_step', String(targetStep + 1));
+      } catch (_) {}
       actions.startBypass(targetUrl, targetStep, totalBypassSteps, targetLink?.title);
     } else if (state.status === 'step1_pending') {
       const requiredPasscode = currentLink?.passcode?.trim();
