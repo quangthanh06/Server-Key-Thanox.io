@@ -47,4 +47,18 @@ export const adminApi = {
   
   clearSessions: (token: string) =>
     adminRequest<any>('/api/admin/sessions', token, { method: 'DELETE' }),
+
+  getBannedIps: (token: string) =>
+    adminRequest<{ bannedIps: string[] }>('/api/admin/banned-ips', token),
+
+  banIp: (token: string, ip: string) =>
+    adminRequest<{ message: string; bannedIps: string[] }>('/api/admin/ban-ip', token, {
+      method: 'POST',
+      body: JSON.stringify({ ip })
+    }),
+
+  unbanIp: (token: string, ip: string) =>
+    adminRequest<{ message: string; bannedIps: string[] }>(`/api/admin/ban-ip?ip=${encodeURIComponent(ip)}`, token, {
+      method: 'DELETE'
+    }),
 };

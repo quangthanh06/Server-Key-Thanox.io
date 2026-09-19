@@ -1,8 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSession } from '../state/useSession';
 import { Header } from '../components/Header';
 import { AnnouncementBanner } from '../components/AnnouncementBanner';
 import { MaintenanceScreen } from '../components/MaintenanceScreen';
+import { BannedScreen } from '../components/BannedScreen';
+import { AdBlockModal } from '../components/AdBlockModal';
 import { LimitReachedCard } from '../components/LimitReachedCard';
 import { Card } from '../components/Card';
 import { TypeSelector } from '../components/TypeSelector';
@@ -10,6 +12,7 @@ import { PackageInfo } from '../components/PackageInfo';
 import { SessionInfo } from '../components/SessionInfo';
 import { Footer } from '../components/Footer';
 import { ProxyType } from '../types';
+import { detectAdBlock } from '../utils/adblockDetector';
 import '../components/ActionButton.css';
 import '../components/ResultBox.css';
 import '../components/LoadingOverlay.css';
@@ -21,6 +24,26 @@ export function Home() {
   const [btnText, setBtnText] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [toastMsg, setToastMsg] = useState<{ text: string; isError?: boolean } | null>(null);
+  const [hasAdBlock, setHasAdBlock] = useState(false);
+  const [showAdBlockModal, setShowAdBlockModal] = useState(false);
+  const [adBlockDismissed, setAdBlockDismissed] = useState(false);
+
+  useEffect(() => {
+    detectAdBlock().then((blocked) => {
+      if (blocked) setHasAdBlock(true);
+    });
+  }, []);
+
+  const handleRecheckAdBlock = async () => {
+    const blocked = await detectAdBlock();
+    setHasAdBlock(blocked);
+    if (!blocked) {
+      setShowAdBlockModal(false);
+      setToastMsg({ text: '✓ Đã phát hiện AdBlock đã tắt. Bạn có thể tiếp tục!', isError: false });
+    } else {
+      alert('Vẫn còn tiện ích chặn quảng cáo hoạt động. Vui lòng tắt hoặc tải lại trang.');
+    }
+  };
 
   const proxyType: ProxyType = state.proxyType || 'ipa';
 
@@ -41,6 +64,11 @@ export function Home() {
   // Main CTA button click: doGetKey (matching reference site getkey.js)
   const doGetKey = async () => {
     if (isIpLimitReached || isGenerating) return;
+
+    if (hasAdBlock && !adBlockDismissed) {
+      setShowAdBlockModal(true);
+      return;
+    }
 
     setCreatedUrl(null);
     setToastMsg(null);
@@ -115,6 +143,7 @@ export function Home() {
   };
 
   const isMaintenance = Boolean(state.stats?.maintenanceMode);
+  const isBanned = state.error?.code === 'IP_BANNED';
 
   return (
     <div className="wrap">
@@ -125,8 +154,11 @@ export function Home() {
         <AnnouncementBanner message={state.stats.announcement} />
       )}
       
-      {/* Maintenance Mode Screen with Admin Zalo */}
-      {isMaintenance ? (
+      {/* Banned IP Screen */}
+      {isBanned ? (
+        <BannedScreen zaloPhone={state.stats?.adminZalo || '0889696810'} />
+      ) : isMaintenance ? (
+        /* Maintenance Mode Screen with Admin Zalo */
         <MaintenanceScreen zaloPhone={state.stats?.adminZalo || '0889696810'} />
       ) : (
         <>
@@ -199,6 +231,14 @@ export function Home() {
             <SessionInfo state={state} />
           </Card>
         </>
+      )}
+
+      {/* AdBlock Modal Warning */}
+      {showAdBlockModal && (
+        <AdBlockModal 
+          onDismiss={() => { setShowAdBlockModal(false); setAdBlockDismissed(true); }}
+          onRecheck={handleRecheckAdBlock}
+        />
       )}
 
       <Footer />

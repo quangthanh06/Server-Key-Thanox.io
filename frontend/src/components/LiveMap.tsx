@@ -7,13 +7,26 @@ interface LiveMapProps {
   sessions: any[];
   selectedSessionId?: string | null;
   onSelectSession?: (id: string) => void;
+  onBanIp?: (ip: string) => void;
 }
 
-export function LiveMap({ sessions, selectedSessionId }: LiveMapProps) {
+export function LiveMap({ sessions, selectedSessionId, onBanIp }: LiveMapProps) {
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<L.Map | null>(null);
   const markersRef = useRef<Map<string, L.Marker>>(new Map());
   const [filter, setFilter] = useState<'all' | 'serverkey' | 'step1' | 'done'>('all');
+
+  // Register global window helper for popup ban button
+  useEffect(() => {
+    (window as any).__liveMapBanIp = (ip: string) => {
+      if (onBanIp && ip) {
+        onBanIp(ip);
+      }
+    };
+    return () => {
+      delete (window as any).__liveMapBanIp;
+    };
+  }, [onBanIp]);
 
   // Initialize Map
   useEffect(() => {
@@ -78,13 +91,19 @@ export function LiveMap({ sessions, selectedSessionId }: LiveMapProps) {
       const isStep2 = s.step === 'step2' || s.status === 'step2_pending';
       const isDone = s.step === 'completed' || s.status === 'key_ready';
       const isStep1 = s.step === 'step1' || s.step === 'step1_done' || s.status === 'step1_pending';
+      const isBlocked = s.badgeClass === 'blocked' || s.statusLabel?.includes('BANNED') || s.statusLabel?.includes('CẤM');
 
       let pinTypeClass = 'pin-visited';
       let iconSymbol = '📱';
       let badgeLabel = '⚡ Mới vào web';
       let badgeClass = 'visited';
 
-      if (isStep2) {
+      if (isBlocked) {
+        pinTypeClass = 'pin-blocked';
+        iconSymbol = '🚫';
+        badgeLabel = '🚫 ĐÃ BỊ CẤM (BANNED)';
+        badgeClass = 'blocked';
+      } else if (isStep2) {
         pinTypeClass = 'pin-serverkey';
         iconSymbol = '🚀';
         badgeLabel = '🚀 ĐANG Ở SERVERKEY';
@@ -115,6 +134,7 @@ export function LiveMap({ sessions, selectedSessionId }: LiveMapProps) {
       const popupHtml = `
         <div class="map-popup-card">
           <span class="map-popup-badge ${badgeClass}">${badgeLabel}</span>
+          ${s.isVpn ? `<div class="map-popup-vpn">🛡️ PHÁT HIỆN VPN / DATACENTER PROXY</div>` : ''}
           <div class="map-popup-location">${s.location || (s.city ? `🇻🇳 ${s.city}, VN` : '🇻🇳 Việt Nam')}</div>
           <div class="map-popup-row">
             <span class="label">IP:</span>
@@ -133,14 +153,24 @@ export function LiveMap({ sessions, selectedSessionId }: LiveMapProps) {
             <span class="label">Tọa độ:</span>
             <span class="val" style="font-family: monospace; font-size: 0.7rem; color: #a0aec0;">${s.lat?.toFixed(4)}, ${s.lon?.toFixed(4)}</span>
           </div>
-          <a 
-            href="https://www.google.com/maps?q=${s.lat},${s.lon}" 
-            target="_blank" 
-            rel="noopener noreferrer" 
-            class="map-popup-btn"
-          >
-            🌍 Mở Google Maps Vệ Tinh ↗
-          </a>
+          <div class="map-popup-actions">
+            <a 
+              href="https://www.google.com/maps?q=${s.lat},${s.lon}" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              class="map-popup-btn"
+            >
+              🌍 Google Maps ↗
+            </a>
+            ${onBanIp && s.ip ? `
+            <button 
+              type="button" 
+              class="map-popup-ban-btn"
+              onclick="window.__liveMapBanIp('${s.ip}')"
+            >
+              🚫 Cấm IP
+            </button>` : ''}
+          </div>
         </div>
       `;
 
@@ -155,7 +185,7 @@ export function LiveMap({ sessions, selectedSessionId }: LiveMapProps) {
         marker.setPopupContent(popupHtml);
       }
     });
-  }, [sessions, filter]);
+  }, [sessions, filter, onBanIp]);
 
   // Smooth Fly-To when a session is selected from table
   useEffect(() => {

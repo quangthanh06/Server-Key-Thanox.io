@@ -287,10 +287,45 @@
   color: #00f0ff;
 }
 
+.map-popup-badge.blocked {
+  background: rgba(255, 0, 55, 0.3);
+  color: #ff3366;
+  border: 1px solid #ff0037;
+  box-shadow: 0 0 10px rgba(255, 0, 55, 0.5);
+}
+
+.map-popup-vpn {
+  display: inline-block;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  margin-bottom: 0.5rem;
+  background: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  letter-spacing: 0.04em;
+}
+
+.pin-blocked .cyber-pin-core {
+  background: linear-gradient(135deg, #7f1d1d, #450a0a);
+  border-color: #ef4444;
+  box-shadow: 0 0 12px #ef4444;
+}
+.pin-blocked .cyber-pin-ripple {
+  border: 2px solid #ef4444;
+  background: rgba(239, 68, 68, 0.25);
+}
+
+.map-popup-actions {
+  display: flex;
+  gap: 0.4rem;
+  margin-top: 0.65rem;
+}
+
 .map-popup-btn {
   display: block;
-  width: 100%;
-  margin-top: 0.65rem;
+  flex: 1;
   background: linear-gradient(135deg, rgba(0, 240, 255, 0.2), rgba(0, 240, 255, 0.05));
   border: 1px solid rgba(0, 240, 255, 0.4);
   color: #00f0ff;
@@ -301,10 +336,31 @@
   font-weight: 600;
   text-decoration: none;
   transition: all 0.2s;
+  cursor: pointer;
 }
 
 .map-popup-btn:hover {
   background: rgba(0, 240, 255, 0.35);
   box-shadow: 0 0 10px rgba(0, 240, 255, 0.4);
   color: #fff;
+}
+
+.map-popup-ban-btn {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.45);
+  color: #fca5a5;
+  padding: 0.4rem 0.6rem;
+  border-radius: 5px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.map-popup-ban-btn:hover {
+  background: rgba(239, 68, 68, 0.4);
+  color: #fff;
+  border-color: #ef4444;
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.4);
 }

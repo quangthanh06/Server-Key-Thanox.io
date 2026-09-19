@@ -32,6 +32,7 @@ export interface LiveSession {
   location: string;
   lat: number;
   lon: number;
+  isVpn?: boolean;
   device: string;
   os: string;
   deviceIcon: string;
@@ -45,6 +46,9 @@ export interface LiveSession {
 
 // In-memory sessions tracking map (keeps up to 200 recent sessions)
 const activeSessions: Map<string, LiveSession> = new Map();
+
+// In-memory Banned IP set
+const bannedIps = new Set<string>();
 
 const VN_CITY_COORDINATES: Record<string, [number, number]> = {
   'ha noi': [21.0285, 105.8542],
@@ -203,6 +207,7 @@ async function getGeoInfo(request: Request, clientIp: string): Promise<{
   location: string;
   lat: number;
   lon: number;
+  isVpn: boolean;
 }> {
   const cf = (request as any).cf || {};
   let city = request.headers.get('cf-ipcity') || cf.city || '';
@@ -241,6 +246,20 @@ async function getGeoInfo(request: Request, clientIp: string): Promise<{
     }
   }
 
+  // VPN / Datacenter / Proxy Detection
+  let isVpn = false;
+  const isTor = Boolean(cf.isTor);
+  const ispLower = (isp || '').toLowerCase();
+  const vpnKeywords = [
+    'warp', 'cloudflare', 'm247', 'digitalocean', 'ovh', 'linode', 'amazon',
+    'aws', 'hosting', 'datacenter', 'vpn', 'proxy', 'leaseweb', 'choopa',
+    'vultr', 'packetexchange', 'hetzner', 'fastly', 'akamai', 'google cloud',
+    'microsoft', 'azure', 'alibaba', 'zenlayer', 'cogent'
+  ];
+  if (isTor || vpnKeywords.some(k => ispLower.includes(k))) {
+    isVpn = true;
+  }
+
   // Add micro-jitter so multiple sessions in the same city don't stack completely
   const jitterLat = (Math.random() - 0.5) * 0.003;
   const jitterLon = (Math.random() - 0.5) * 0.003;
@@ -265,7 +284,7 @@ async function getGeoInfo(request: Request, clientIp: string): Promise<{
     location = '🇻🇳 Việt Nam';
   }
 
-  return { city, country, region, isp, flag, location, lat, lon };
+  return { city, country, region, isp, flag, location, lat, lon, isVpn };
 }
 
 async function recordSessionEvent(
@@ -299,6 +318,8 @@ async function recordSessionEvent(
   }
 
   let session = activeSessions.get(key);
+  const isBanned = bannedIps.has(clientIp);
+
   if (!session) {
     session = {
       id: key,
@@ -310,13 +331,14 @@ async function recordSessionEvent(
       location: geo.location,
       lat: geo.lat,
       lon: geo.lon,
+      isVpn: geo.isVpn,
       device: parsedUa.device,
       os: parsedUa.os,
       deviceIcon: parsedUa.deviceIcon,
       proxyType: updates.proxyType || null,
       step: updates.step,
-      statusLabel: updates.statusLabel,
-      badgeClass: updates.badgeClass,
+      statusLabel: isBanned ? '🚫 ĐÃ BỊ CẤM (BANNED)' : updates.statusLabel,
+      badgeClass: isBanned ? 'blocked' : updates.badgeClass,
       createdAt: now,
       updatedAt: now
     };
@@ -324,10 +346,11 @@ async function recordSessionEvent(
     session.updatedAt = now;
     if (updates.proxyType) session.proxyType = updates.proxyType;
     session.step = updates.step;
-    session.statusLabel = updates.statusLabel;
-    session.badgeClass = updates.badgeClass;
+    session.statusLabel = isBanned ? '🚫 ĐÃ BỊ CẤM (BANNED)' : updates.statusLabel;
+    session.badgeClass = isBanned ? 'blocked' : updates.badgeClass;
     if (geo.city && !session.city) session.city = geo.city;
     if (geo.isp && !session.isp) session.isp = geo.isp;
+    if (typeof geo.isVpn === 'boolean') session.isVpn = geo.isVpn;
     if (geo.lat && (!session.lat || session.lat === 16.0544)) session.lat = geo.lat;
     if (geo.lon && (!session.lon || session.lon === 108.2022)) session.lon = geo.lon;
   }
@@ -382,8 +405,41 @@ async function saveSessionsToCache() {
   } catch (_) {}
 }
 
+async function loadBannedIpsFromCache() {
+  try {
+    const cache = (caches as any).default;
+    if (!cache) return;
+    const req = new Request('https://serverkey-thanox.pages.dev/__banned_ips_store__', { method: 'GET' });
+    const cacheRes = await cache.match(req);
+    if (cacheRes) {
+      const list = await cacheRes.json() as string[];
+      if (Array.isArray(list)) {
+        list.forEach((ip) => bannedIps.add(ip));
+      }
+    }
+  } catch (_) {}
+}
+
+async function saveBannedIpsToCache() {
+  try {
+    const cache = (caches as any).default;
+    if (!cache) return;
+    const list = Array.from(bannedIps);
+    const req = new Request('https://serverkey-thanox.pages.dev/__banned_ips_store__', { method: 'GET' });
+    const res = new Response(JSON.stringify(list), {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'public, max-age=86400, s-maxage=86400'
+      }
+    });
+    await cache.put(req, res);
+  } catch (_) {}
+}
+
 export async function onRequest(context: { request: Request; env: any }) {
   await loadSessionsFromCache();
+  await loadBannedIpsFromCache();
   const { request } = context;
   const url = new URL(request.url);
   const path = url.pathname;
@@ -404,6 +460,15 @@ export async function onRequest(context: { request: Request; env: any }) {
   const clientIp = request.headers.get('cf-connecting-ip') || 
                    request.headers.get('x-forwarded-for')?.split(',')[0].trim() || 
                    '127.0.0.1';
+
+  // Enforce IP Ban on all client requests
+  if (bannedIps.has(clientIp) && !path.includes('/admin')) {
+    return new Response(JSON.stringify({
+      success: false,
+      data: null,
+      error: { code: 'IP_BANNED', message: 'Địa chỉ IP của bạn đã bị quản trị viên chặn truy cập.' }
+    }), { status: 403, headers: corsHeaders });
+  }
 
   try {
     // ----------------------------------------------------
@@ -520,6 +585,84 @@ export async function onRequest(context: { request: Request; env: any }) {
         success: true,
         data: {
           keys: []
+        },
+        error: null
+      }), { headers: corsHeaders });
+    }
+
+    // GET /api/admin/banned-ips
+    if (path.endsWith('/admin/banned-ips') && request.method === 'GET') {
+      return new Response(JSON.stringify({
+        success: true,
+        data: {
+          bannedIps: Array.from(bannedIps)
+        },
+        error: null
+      }), { headers: corsHeaders });
+    }
+
+    // POST /api/admin/ban-ip
+    if (path.endsWith('/admin/ban-ip') && request.method === 'POST') {
+      let body: any = {};
+      try { body = await request.json(); } catch (_) {}
+      const ip = (body.ip || '').trim();
+      if (!ip) {
+        return new Response(JSON.stringify({
+          success: false,
+          data: null,
+          error: { code: 'INVALID_IP', message: 'Địa chỉ IP không hợp lệ' }
+        }), { status: 400, headers: corsHeaders });
+      }
+
+      bannedIps.add(ip);
+      // Mark active sessions for this IP as banned
+      for (const sess of activeSessions.values()) {
+        if (sess.ip === ip) {
+          sess.badgeClass = 'blocked';
+          sess.statusLabel = '🚫 ĐÃ BỊ CẤM (BANNED)';
+          sess.updatedAt = Date.now();
+        }
+      }
+      await saveBannedIpsToCache();
+      await saveSessionsToCache();
+
+      return new Response(JSON.stringify({
+        success: true,
+        data: {
+          message: `Đã cấm IP ${ip} thành công`,
+          bannedIps: Array.from(bannedIps)
+        },
+        error: null
+      }), { headers: corsHeaders });
+    }
+
+    // DELETE /api/admin/ban-ip
+    if (path.endsWith('/admin/ban-ip') && request.method === 'DELETE') {
+      let ip = url.searchParams.get('ip') || '';
+      if (!ip) {
+        try {
+          const body: any = await request.json();
+          ip = (body.ip || '').trim();
+        } catch (_) {}
+      }
+      if (ip) {
+        bannedIps.delete(ip);
+        // Unmark blocked label if active
+        for (const sess of activeSessions.values()) {
+          if (sess.ip === ip && sess.badgeClass === 'blocked') {
+            sess.badgeClass = 'created';
+            sess.statusLabel = '⚡ Đã mở cấm';
+            sess.updatedAt = Date.now();
+          }
+        }
+        await saveBannedIpsToCache();
+        await saveSessionsToCache();
+      }
+      return new Response(JSON.stringify({
+        success: true,
+        data: {
+          message: `Đã gỡ cấm cho IP ${ip}`,
+          bannedIps: Array.from(bannedIps)
         },
         error: null
       }), { headers: corsHeaders });

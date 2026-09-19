@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { adminApi } from '../api/adminApi';
 import { LiveMap } from '../components/LiveMap';
+import { playRadarPing, playAlertBeep, playSuccessChime } from '../utils/soundEffects';
 import './Admin.css';
 
 type Tab = 'dashboard' | 'settings' | 'sessions';
@@ -541,7 +542,7 @@ function SettingsTab({ token, onAuthError }: { token: string; onAuthError: () =>
   );
 }
 
-/* ============ Sessions Tab (Live User & Bypass Tracking) ============ */
+/* ============ Sessions Tab (Cyber Live Radar VIP & Anti-Cheat) ============ */
 function SessionsTab({ token, onAuthError }: { token: string; onAuthError: () => void }) {
   const [sessions, setSessions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -550,6 +551,19 @@ function SessionsTab({ token, onAuthError }: { token: string; onAuthError: () =>
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStep, setFilterStep] = useState<string>('all');
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
+
+  // Audio Radar state
+  const [soundEnabled, setSoundEnabled] = useState<boolean>(() => {
+    return localStorage.getItem('radar_sound_enabled') !== 'false';
+  });
+  const prevStep2Ids = useRef<Set<string>>(new Set());
+  const isInitialLoad = useRef<boolean>(true);
+
+  // Banned IPs state & modal
+  const [bannedIps, setBannedIps] = useState<string[]>([]);
+  const [showBannedModal, setShowBannedModal] = useState(false);
+  const [customBanInput, setCustomBanInput] = useState('');
+  const [banLoading, setBanLoading] = useState(false);
 
   const fetchSessions = useCallback(async (isBackground = false) => {
     if (!isBackground) setRefreshing(true);
@@ -572,9 +586,17 @@ function SessionsTab({ token, onAuthError }: { token: string; onAuthError: () =>
     if (!isBackground) setRefreshing(false);
   }, [token, onAuthError]);
 
+  const fetchBannedIps = useCallback(async () => {
+    const res = await adminApi.getBannedIps(token);
+    if (res.data?.bannedIps) {
+      setBannedIps(res.data.bannedIps);
+    }
+  }, [token]);
+
   useEffect(() => {
     fetchSessions();
-  }, [fetchSessions]);
+    fetchBannedIps();
+  }, [fetchSessions, fetchBannedIps]);
 
   // Auto-refresh interval every 6 seconds
   useEffect(() => {
@@ -585,11 +607,136 @@ function SessionsTab({ token, onAuthError }: { token: string; onAuthError: () =>
     return () => clearInterval(interval);
   }, [autoRefresh, fetchSessions]);
 
+  // Audio radar trigger when a user newly enters step2
+  useEffect(() => {
+    const currentStep2Ids = new Set<string>();
+    sessions.forEach((s) => {
+      if (s.step === 'step2' || s.status === 'step2_pending') {
+        currentStep2Ids.add(s.id);
+      }
+    });
+
+    if (!isInitialLoad.current && soundEnabled) {
+      for (const id of currentStep2Ids) {
+        if (!prevStep2Ids.current.has(id)) {
+          playRadarPing();
+          break;
+        }
+      }
+    }
+    prevStep2Ids.current = currentStep2Ids;
+    if (isInitialLoad.current && sessions.length > 0) {
+      isInitialLoad.current = false;
+    }
+  }, [sessions, soundEnabled]);
+
+  const toggleSound = () => {
+    const next = !soundEnabled;
+    setSoundEnabled(next);
+    localStorage.setItem('radar_sound_enabled', String(next));
+    if (next) playRadarPing();
+  };
+
+  const handleBanIp = async (ip: string) => {
+    if (!ip) return;
+    if (!window.confirm(`⚠️ Xác nhận CẤM IP: ${ip}?\n\nNgười dùng này sẽ bị chặn ngay lập tức và không thể nhận key.`)) return;
+    setBanLoading(true);
+    const res = await adminApi.banIp(token, ip);
+    if (res.data) {
+      playAlertBeep();
+      setBannedIps(res.data.bannedIps);
+      fetchSessions(true);
+    } else if (res.error) {
+      alert('Lỗi khi cấm IP: ' + res.error.message);
+    }
+    setBanLoading(false);
+  };
+
+  const handleUnbanIp = async (ip: string) => {
+    if (!ip) return;
+    setBanLoading(true);
+    const res = await adminApi.unbanIp(token, ip);
+    if (res.data) {
+      playSuccessChime();
+      setBannedIps(res.data.bannedIps);
+      fetchSessions(true);
+    } else if (res.error) {
+      alert('Lỗi khi gỡ cấm: ' + res.error.message);
+    }
+    setBanLoading(false);
+  };
+
+  const handleAddCustomBan = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const clean = customBanInput.trim();
+    if (!clean) return;
+    await handleBanIp(clean);
+    setCustomBanInput('');
+  };
+
   const handleClearHistory = async () => {
     if (window.confirm('Bạn có chắc muốn xóa sạch toàn bộ lịch sử theo dõi phiên?')) {
       await adminApi.clearSessions(token);
       setSessions([]);
     }
+  };
+
+  const handleExportCsv = () => {
+    if (sessions.length === 0) {
+      alert('Chưa có dữ liệu người dùng để xuất file Excel/CSV.');
+      return;
+    }
+    const headers = [
+      'Thời Gian',
+      'Địa Chỉ IP',
+      'Vị Trí',
+      'Thành Phố',
+      'Quốc Gia',
+      'Nhà Mạng / ISP',
+      'Thiết Bị',
+      'Hệ Điều Hành',
+      'Gói Key',
+      'Trạng Thái',
+      'VPN/Proxy',
+      'Đã Bị Cấm',
+      'Vĩ Độ',
+      'Kinh Độ',
+      'Google Maps Link'
+    ];
+
+    const rows = sessions.map((s) => {
+      const isBlocked = bannedIps.includes(s.ip) || s.badgeClass === 'blocked';
+      const timeStr = new Date(s.updatedAt || s.createdAt || Date.now()).toLocaleString('vi-VN');
+      return [
+        `"${timeStr}"`,
+        `"${s.ip || ''}"`,
+        `"${(s.location || '').replace(/"/g, '""')}"`,
+        `"${(s.city || '').replace(/"/g, '""')}"`,
+        `"${(s.country || '').replace(/"/g, '""')}"`,
+        `"${(s.isp || '').replace(/"/g, '""')}"`,
+        `"${(s.device || '').replace(/"/g, '""')}"`,
+        `"${(s.os || '').replace(/"/g, '""')}"`,
+        `"${s.proxyType || s.proxy_type || 'ipa'}"`,
+        `"${(s.statusLabel || s.step || '').replace(/"/g, '""')}"`,
+        `"${s.isVpn ? 'CÓ (VPN/Proxy)' : 'Không'}"`,
+        `"${isBlocked ? 'ĐÃ BỊ CẤM' : 'Bình thường'}"`,
+        `"${s.lat || ''}"`,
+        `"${s.lon || ''}"`,
+        `"https://www.google.com/maps?q=${s.lat},${s.lon}"`
+      ];
+    });
+
+    const csvContent = '\uFEFF' + [headers.join(','), ...rows.map(r => r.join(','))].join('\r\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    const dateStr = new Date().toISOString().slice(0, 10);
+    link.href = url;
+    link.setAttribute('download', `ServerKey_Tracking_Export_${dateStr}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   const formatTime = (timestamp: number | string) => {
@@ -634,6 +781,18 @@ function SessionsTab({ token, onAuthError }: { token: string; onAuthError: () =>
   const countStep2 = sessions.filter(s => s.step === 'step2' || s.status === 'step2_pending').length;
   const countDone = sessions.filter(s => s.step === 'completed' || s.status === 'key_ready').length;
 
+  // Visual Distribution Calculations
+  const total = sessions.length || 1;
+  const iphoneCount = sessions.filter(s => /iphone|ipad|ios/i.test((s.device || '') + ' ' + (s.os || ''))).length;
+  const androidCount = sessions.filter(s => /android|samsung|redmi|xiaomi|oppo|vivo/i.test((s.device || '') + ' ' + (s.os || ''))).length;
+  const pcCount = sessions.filter(s => /pc|windows|mac|macbook|linux/i.test((s.device || '') + ' ' + (s.os || ''))).length;
+  const otherDeviceCount = Math.max(0, sessions.length - (iphoneCount + androidCount + pcCount));
+
+  const viettelCount = sessions.filter(s => /viettel/i.test(s.isp || '')).length;
+  const vnptCount = sessions.filter(s => /vnpt|vinaphone/i.test(s.isp || '')).length;
+  const fptCount = sessions.filter(s => /fpt/i.test(s.isp || '')).length;
+  const otherIspCount = Math.max(0, sessions.length - (viettelCount + vnptCount + fptCount));
+
   return (
     <>
       {/* Live Summary Bar */}
@@ -656,11 +815,109 @@ function SessionsTab({ token, onAuthError }: { token: string; onAuthError: () =>
         </div>
       </div>
 
-      {/* Cyber Live GPS Map */}
+      {/* Cyber Distribution Charts */}
+      {sessions.length > 0 && (
+        <div className="admin-charts-row">
+          {/* Device Distribution */}
+          <div className="admin-chart-card">
+            <div className="admin-chart-header">
+              <span>📱 PHÂN BỐ THIẾT BỊ</span>
+              <span style={{ color: 'var(--neon-cy)', fontSize: '0.72rem' }}>{sessions.length} thiết bị</span>
+            </div>
+            <div className="admin-chart-item">
+              <div className="admin-chart-labels">
+                <span style={{ color: '#fff' }}>🍎 iPhone / iPad</span>
+                <span style={{ color: '#00f0ff', fontWeight: 600 }}>{iphoneCount} ({Math.round((iphoneCount / total) * 100)}%)</span>
+              </div>
+              <div className="admin-chart-bar-bg">
+                <div className="admin-chart-bar-fill" style={{ width: `${(iphoneCount / total) * 100}%`, background: 'linear-gradient(90deg, #00f0ff, #0099ff)' }} />
+              </div>
+            </div>
+            <div className="admin-chart-item">
+              <div className="admin-chart-labels">
+                <span style={{ color: '#fff' }}>🤖 Android (Samsung, Xiaomi...)</span>
+                <span style={{ color: '#10b981', fontWeight: 600 }}>{androidCount} ({Math.round((androidCount / total) * 100)}%)</span>
+              </div>
+              <div className="admin-chart-bar-bg">
+                <div className="admin-chart-bar-fill" style={{ width: `${(androidCount / total) * 100}%`, background: 'linear-gradient(90deg, #10b981, #059669)' }} />
+              </div>
+            </div>
+            <div className="admin-chart-item">
+              <div className="admin-chart-labels">
+                <span style={{ color: '#fff' }}>💻 Máy Tính PC / Mac</span>
+                <span style={{ color: '#f59e0b', fontWeight: 600 }}>{pcCount} ({Math.round((pcCount / total) * 100)}%)</span>
+              </div>
+              <div className="admin-chart-bar-bg">
+                <div className="admin-chart-bar-fill" style={{ width: `${(pcCount / total) * 100}%`, background: 'linear-gradient(90deg, #f59e0b, #d97706)' }} />
+              </div>
+            </div>
+            {otherDeviceCount > 0 && (
+              <div className="admin-chart-item">
+                <div className="admin-chart-labels">
+                  <span style={{ color: 'rgba(255,255,255,0.6)' }}>🌐 Khác</span>
+                  <span style={{ color: '#a0aec0' }}>{otherDeviceCount} ({Math.round((otherDeviceCount / total) * 100)}%)</span>
+                </div>
+                <div className="admin-chart-bar-bg">
+                  <div className="admin-chart-bar-fill" style={{ width: `${(otherDeviceCount / total) * 100}%`, background: '#64748b' }} />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* ISP Network Distribution */}
+          <div className="admin-chart-card">
+            <div className="admin-chart-header">
+              <span>🏢 PHÂN BỐ NHÀ MẠNG / ISP</span>
+              <span style={{ color: '#00ff88', fontSize: '0.72rem' }}>Hạ tầng VN</span>
+            </div>
+            <div className="admin-chart-item">
+              <div className="admin-chart-labels">
+                <span style={{ color: '#fff' }}>🔴 Viettel Telecom</span>
+                <span style={{ color: '#ef4444', fontWeight: 600 }}>{viettelCount} ({Math.round((viettelCount / total) * 100)}%)</span>
+              </div>
+              <div className="admin-chart-bar-bg">
+                <div className="admin-chart-bar-fill" style={{ width: `${(viettelCount / total) * 100}%`, background: 'linear-gradient(90deg, #ef4444, #b91c1c)' }} />
+              </div>
+            </div>
+            <div className="admin-chart-item">
+              <div className="admin-chart-labels">
+                <span style={{ color: '#fff' }}>🔵 VNPT / Vinaphone</span>
+                <span style={{ color: '#38bdf8', fontWeight: 600 }}>{vnptCount} ({Math.round((vnptCount / total) * 100)}%)</span>
+              </div>
+              <div className="admin-chart-bar-bg">
+                <div className="admin-chart-bar-fill" style={{ width: `${(vnptCount / total) * 100}%`, background: 'linear-gradient(90deg, #38bdf8, #0284c7)' }} />
+              </div>
+            </div>
+            <div className="admin-chart-item">
+              <div className="admin-chart-labels">
+                <span style={{ color: '#fff' }}>🟠 FPT Telecom</span>
+                <span style={{ color: '#fb923c', fontWeight: 600 }}>{fptCount} ({Math.round((fptCount / total) * 100)}%)</span>
+              </div>
+              <div className="admin-chart-bar-bg">
+                <div className="admin-chart-bar-fill" style={{ width: `${(fptCount / total) * 100}%`, background: 'linear-gradient(90deg, #fb923c, #ea580c)' }} />
+              </div>
+            </div>
+            {otherIspCount > 0 && (
+              <div className="admin-chart-item">
+                <div className="admin-chart-labels">
+                  <span style={{ color: 'rgba(255,255,255,0.6)' }}>📶 4G / Di động / Khác</span>
+                  <span style={{ color: '#a0aec0' }}>{otherIspCount} ({Math.round((otherIspCount / total) * 100)}%)</span>
+                </div>
+                <div className="admin-chart-bar-bg">
+                  <div className="admin-chart-bar-fill" style={{ width: `${(otherIspCount / total) * 100}%`, background: '#64748b' }} />
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Cyber Live GPS Map with Ban IP integration */}
       <LiveMap 
         sessions={sessions} 
         selectedSessionId={selectedSessionId} 
-        onSelectSession={(id) => setSelectedSessionId(id)} 
+        onSelectSession={(id) => setSelectedSessionId(id)}
+        onBanIp={handleBanIp}
       />
 
       <div className="admin-section" style={{ padding: '1.25rem' }}>
@@ -675,7 +932,39 @@ function SessionsTab({ token, onAuthError }: { token: string; onAuthError: () =>
             </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+            {/* Audio Radar Toggle Button */}
+            <button
+              type="button"
+              className={`admin-sound-btn ${soundEnabled ? 'active' : ''}`}
+              onClick={toggleSound}
+              title="Phát tiếng Ping Radar khi có khách vào ServerKey"
+            >
+              {soundEnabled ? '🔊 Âm thanh: BẬT' : '🔇 Âm thanh: TẮT'}
+            </button>
+
+            {/* Export CSV / Excel Button */}
+            <button
+              type="button"
+              className="admin-logout-btn"
+              style={{ color: '#10b981', borderColor: 'rgba(16, 185, 129, 0.4)', padding: '0.35rem 0.75rem', display: 'flex', alignItems: 'center', gap: '4px' }}
+              onClick={handleExportCsv}
+              title="Xuất file Excel / CSV để đối soát với Layma"
+            >
+              📥 Xuất Excel / CSV
+            </button>
+
+            {/* Manage Banned IPs Modal Button */}
+            <button
+              type="button"
+              className="admin-logout-btn"
+              style={{ color: '#ff3366', borderColor: 'rgba(255, 0, 85, 0.4)', padding: '0.35rem 0.75rem' }}
+              onClick={() => setShowBannedModal(true)}
+              title="Xem và quản lý danh sách IP bị cấm"
+            >
+              🚫 IP Bị Cấm ({bannedIps.length})
+            </button>
+
             <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.72rem', color: autoRefresh ? '#00ff88' : 'rgba(255,255,255,0.4)', cursor: 'pointer', userSelect: 'none' }}>
               <input
                 type="checkbox"
@@ -683,7 +972,7 @@ function SessionsTab({ token, onAuthError }: { token: string; onAuthError: () =>
                 onChange={(e) => setAutoRefresh(e.target.checked)}
                 style={{ accentColor: '#00ff88', cursor: 'pointer' }}
               />
-              Tự động cập nhật (6s)
+              Tự động (6s)
             </label>
 
             <button
@@ -759,12 +1048,12 @@ function SessionsTab({ token, onAuthError }: { token: string; onAuthError: () =>
               <thead>
                 <tr>
                   <th style={{ minWidth: 95 }}>Thời Gian</th>
-                  <th style={{ minWidth: 110 }}>Địa Chỉ IP</th>
+                  <th style={{ minWidth: 120 }}>Địa Chỉ IP</th>
                   <th style={{ minWidth: 160 }}>Ở Đâu (Vị Trí & Mạng)</th>
                   <th style={{ minWidth: 140 }}>Ai (Thiết Bị)</th>
                   <th style={{ minWidth: 80 }}>Gói Key</th>
-                  <th style={{ minWidth: 170 }}>Đang Vượt Như Nào</th>
-                  <th style={{ minWidth: 130 }}>Bản Đồ / GPS</th>
+                  <th style={{ minWidth: 160 }}>Đang Vượt Như Nào</th>
+                  <th style={{ minWidth: 140 }}>Thao Tác</th>
                 </tr>
               </thead>
               <tbody>
@@ -773,10 +1062,15 @@ function SessionsTab({ token, onAuthError }: { token: string; onAuthError: () =>
                   const isDone = s.step === 'completed' || s.status === 'key_ready' || s.overall_status === 'key_ready';
                   const isStep2 = s.step === 'step2' || s.status === 'step2_pending' || s.overall_status === 'step2_pending';
                   const isStep1 = s.step === 'step1' || s.step === 'step1_done' || s.status === 'step1_pending' || s.overall_status === 'step1_pending';
+                  const isBlocked = bannedIps.includes(s.ip) || s.badgeClass === 'blocked' || s.statusLabel?.includes('BANNED');
                   
                   let badgeClass = 'created';
                   let statusText = s.statusLabel || s.overall_status || '⚡ Mới vào web';
-                  if (isDone) {
+
+                  if (isBlocked) {
+                    badgeClass = 'blocked';
+                    statusText = '🚫 ĐÃ BỊ CẤM (BANNED)';
+                  } else if (isDone) {
                     badgeClass = 'key_ready';
                     statusText = s.statusLabel || '✅ Đã nhận Key thành công';
                   } else if (isStep2) {
@@ -784,7 +1078,7 @@ function SessionsTab({ token, onAuthError }: { token: string; onAuthError: () =>
                     statusText = s.statusLabel || '🚀 Đang ở ServerKey';
                   } else if (isStep1) {
                     badgeClass = 'step1_pending';
-                    statusText = s.statusLabel || (s.step === 'step1_done' ? '🟢 Đã vượt xong Link 1' : '🟡 Đang vượt Link 1 (Admin)');
+                    statusText = s.statusLabel || (s.step === 'step1_done' ? '🟢 Đã vượt xong Link 1' : '🟡 Đang vượt Link 1 (Layma)');
                   } else if (s.step === 'selected') {
                     badgeClass = 'type_selected';
                     statusText = s.statusLabel || '📱 Đã chọn gói Key';
@@ -805,13 +1099,18 @@ function SessionsTab({ token, onAuthError }: { token: string; onAuthError: () =>
                         </div>
                       </td>
 
-                      {/* 2. IP */}
+                      {/* 2. IP & VPN Badge */}
                       <td>
-                        <div style={{ fontFamily: 'monospace', color: '#00f0ff', fontSize: '0.78rem', fontWeight: 600 }}>
+                        <div style={{ fontFamily: 'monospace', color: isBlocked ? '#ff3366' : '#00f0ff', fontSize: '0.78rem', fontWeight: 600 }}>
                           {s.ip || '127.0.0.1'}
                         </div>
-                        <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.65rem', fontFamily: 'monospace' }}>
-                          ID: {(s.id || '').slice(0, 10)}
+                        {s.isVpn && (
+                          <div style={{ marginTop: '2px' }}>
+                            <span className="admin-badge vpn-tag">🛡️ VPN/Proxy</span>
+                          </div>
+                        )}
+                        <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.65rem', fontFamily: 'monospace', marginTop: '2px' }}>
+                          ID: {(s.id || '').slice(0, 8)}
                         </div>
                       </td>
 
@@ -859,56 +1158,99 @@ function SessionsTab({ token, onAuthError }: { token: string; onAuthError: () =>
                         )}
                       </td>
 
-                      {/* 6. Current Status & How they are bypassing */}
+                      {/* 6. Current Status */}
                       <td>
                         <span className={`admin-badge ${badgeClass} live-pulse`} style={{ fontSize: '0.74rem', padding: '0.3rem 0.65rem' }}>
                           {statusText}
                         </span>
                       </td>
 
-                      {/* 7. GPS & Map Actions */}
+                      {/* 7. Actions: Radar + Maps + Ban IP */}
                       <td style={{ whiteSpace: 'nowrap' }}>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setSelectedSessionId(s.id);
-                              window.scrollTo({ top: 120, behavior: 'smooth' });
-                            }}
-                            style={{
-                              background: 'rgba(0, 240, 255, 0.12)',
-                              border: '1px solid rgba(0, 240, 255, 0.4)',
-                              color: '#00f0ff',
-                              borderRadius: '4px',
-                              padding: '3px 7px',
-                              fontSize: '0.68rem',
-                              fontWeight: 600,
-                              cursor: 'pointer',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '3px',
-                              justifyContent: 'center'
-                            }}
-                          >
-                            📍 Xem trên radar
-                          </button>
-                          {typeof s.lat === 'number' && typeof s.lon === 'number' && (
-                            <a
-                              href={`https://www.google.com/maps?q=${s.lat},${s.lon}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              style={{
-                                color: 'rgba(255, 255, 255, 0.45)',
-                                fontSize: '0.63rem',
-                                textAlign: 'center',
-                                textDecoration: 'none',
-                                fontFamily: 'monospace'
+                          <div style={{ display: 'flex', gap: '4px' }}>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedSessionId(s.id);
+                                window.scrollTo({ top: 120, behavior: 'smooth' });
                               }}
-                              onMouseEnter={(e) => (e.currentTarget.style.color = '#00f0ff')}
-                              onMouseLeave={(e) => (e.currentTarget.style.color = 'rgba(255, 255, 255, 0.45)')}
+                              style={{
+                                background: 'rgba(0, 240, 255, 0.12)',
+                                border: '1px solid rgba(0, 240, 255, 0.4)',
+                                color: '#00f0ff',
+                                borderRadius: '4px',
+                                padding: '3px 6px',
+                                fontSize: '0.68rem',
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                                flex: 1,
+                                textAlign: 'center'
+                              }}
+                              title="Định vị trên bản đồ"
                             >
-                              🌍 Google Maps ({s.lat.toFixed(2)}, {s.lon.toFixed(2)}) ↗
-                            </a>
+                              📍 Radar
+                            </button>
+                            {typeof s.lat === 'number' && typeof s.lon === 'number' && (
+                              <a
+                                href={`https://www.google.com/maps?q=${s.lat},${s.lon}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                style={{
+                                  background: 'rgba(255, 255, 255, 0.06)',
+                                  border: '1px solid rgba(255, 255, 255, 0.15)',
+                                  color: '#cbd5e1',
+                                  borderRadius: '4px',
+                                  padding: '3px 6px',
+                                  fontSize: '0.68rem',
+                                  textDecoration: 'none'
+                                }}
+                                title="Mở Google Maps"
+                              >
+                                🌍 Maps
+                              </a>
+                            )}
+                          </div>
+
+                          {/* 1-Click Ban / Unban Button */}
+                          {s.ip && (
+                            isBlocked ? (
+                              <button
+                                type="button"
+                                onClick={() => handleUnbanIp(s.ip)}
+                                disabled={banLoading}
+                                style={{
+                                  background: 'rgba(16, 185, 129, 0.15)',
+                                  border: '1px solid rgba(16, 185, 129, 0.4)',
+                                  color: '#34d399',
+                                  borderRadius: '4px',
+                                  padding: '3px 6px',
+                                  fontSize: '0.68rem',
+                                  fontWeight: 600,
+                                  cursor: 'pointer'
+                                }}
+                              >
+                                ✅ Mở cấm IP
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => handleBanIp(s.ip)}
+                                disabled={banLoading}
+                                style={{
+                                  background: 'rgba(239, 68, 68, 0.12)',
+                                  border: '1px solid rgba(239, 68, 68, 0.4)',
+                                  color: '#fca5a5',
+                                  borderRadius: '4px',
+                                  padding: '3px 6px',
+                                  fontSize: '0.68rem',
+                                  fontWeight: 600,
+                                  cursor: 'pointer'
+                                }}
+                              >
+                                🚫 Cấm IP này
+                              </button>
+                            )
                           )}
                         </div>
                       </td>
@@ -928,6 +1270,90 @@ function SessionsTab({ token, onAuthError }: { token: string; onAuthError: () =>
           </div>
         )}
       </div>
+
+      {/* Banned IPs Management Modal */}
+      {showBannedModal && (
+        <div className="admin-modal-overlay" onClick={() => setShowBannedModal(false)}>
+          <div className="admin-modal-card" onClick={(e) => e.stopPropagation()}>
+            <div className="admin-modal-title">
+              <span>🚫 QUẢN LÝ IP BỊ CẤM ({bannedIps.length})</span>
+              <button
+                type="button"
+                onClick={() => setShowBannedModal(false)}
+                style={{ background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.6)', cursor: 'pointer', fontSize: '1.2rem' }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <p style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.5)', marginBottom: '1rem' }}>
+              Các địa chỉ IP trong danh sách này sẽ bị từ chối truy cập 403 ngay từ Cloudflare Edge và không thể vượt link hay lấy key.
+            </p>
+
+            {/* Manual Ban Input Form */}
+            <form onSubmit={handleAddCustomBan} style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
+              <input
+                type="text"
+                className="admin-input"
+                style={{ padding: '0.5rem 0.8rem', fontSize: '0.8rem' }}
+                placeholder="Nhập địa chỉ IP cần cấm (VD: 14.238.10.15)..."
+                value={customBanInput}
+                onChange={(e) => setCustomBanInput(e.target.value)}
+              />
+              <button
+                type="submit"
+                className="admin-btn admin-btn-magenta"
+                style={{ width: 'auto', padding: '0.5rem 1rem', marginTop: 0, whiteSpace: 'nowrap' }}
+                disabled={!customBanInput.trim() || banLoading}
+              >
+                + Cấm IP
+              </button>
+            </form>
+
+            {/* Banned List */}
+            <div className="admin-banned-list">
+              {bannedIps.length === 0 ? (
+                <div style={{ color: 'rgba(255,255,255,0.4)', textAlign: 'center', padding: '1.5rem', fontSize: '0.78rem' }}>
+                  Chưa có IP nào bị cấm. Bạn có thể bấm nút "Cấm IP" ngay trên bảng Live Tracking.
+                </div>
+              ) : (
+                bannedIps.map((ip) => (
+                  <div key={ip} className="admin-banned-item">
+                    <span style={{ color: '#ff3366', fontWeight: 600 }}>🚫 {ip}</span>
+                    <button
+                      type="button"
+                      onClick={() => handleUnbanIp(ip)}
+                      disabled={banLoading}
+                      style={{
+                        background: 'rgba(16, 185, 129, 0.15)',
+                        border: '1px solid rgba(16, 185, 129, 0.4)',
+                        color: '#34d399',
+                        borderRadius: '4px',
+                        padding: '3px 8px',
+                        fontSize: '0.72rem',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Gỡ cấm
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div style={{ textAlign: 'right', marginTop: '1rem' }}>
+              <button
+                type="button"
+                className="admin-btn"
+                style={{ width: 'auto', padding: '0.5rem 1.2rem', marginTop: 0 }}
+                onClick={() => setShowBannedModal(false)}
+              >
+                Đóng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

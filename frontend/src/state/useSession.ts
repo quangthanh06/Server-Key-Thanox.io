@@ -11,6 +11,8 @@ export function useSession() {
     const res = await api.getStats();
     if (res.data) {
       dispatch({ type: 'STATS_UPDATED', stats: res.data });
+    } else if (res.error?.code === 'IP_BANNED') {
+      dispatch({ type: 'ERROR', error: res.error });
     }
   }, []);
 
