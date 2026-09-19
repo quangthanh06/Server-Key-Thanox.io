@@ -1,12 +1,12 @@
 // In-memory persistent state for Cloudflare Pages worker instance
 const globalSettings: Record<string, string> = {
-  step1_bypass_url: 'https://layma.net/RwlXK7AH6',
+  step1_bypass_url: 'https://layma.net/i1vAwGviV',
+  step1_title: 'Máy chủ xác thực 2 (Layma 2)',
   step1_passcode: '',
   bypass_links_json: JSON.stringify([
-    { id: '1', title: 'Máy chủ xác thực 1 (Layma 1)', url: 'https://layma.net/RwlXK7AH6', passcode: '', note: '' },
-    { id: '2', title: 'Máy chủ xác thực 2 (Layma 2)', url: 'https://layma.net/i1vAwGviV', passcode: '', note: '' }
+    { id: '1', title: 'Máy chủ xác thực 2 (Layma 2)', url: 'https://layma.net/i1vAwGviV', passcode: '', note: '' }
   ]),
-  step_success_msg: '🎉 Đã hoàn thành Bước {step}/{total}! Hãy bấm nút bên dưới để tiếp tục vượt bước tiếp theo.',
+  step_success_msg: '',
   bypass_cooldown_seconds: '60',
   admin_zalo: '0889696810',
   support_link: 'https://zalo.me/0889696810',
