@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { adminApi } from '../api/adminApi';
+import { LiveMap } from '../components/LiveMap';
 import './Admin.css';
 
 type Tab = 'dashboard' | 'settings' | 'sessions';
@@ -337,39 +338,48 @@ function SettingsTab({ token, onAuthError }: { token: string; onAuthError: () =>
 
           <div style={{
             marginBottom: '0.85rem',
-            padding: '0.55rem 0.75rem',
+            padding: '0.75rem',
             background: 'rgba(0, 240, 255, 0.04)',
-            border: '1px dashed rgba(0, 240, 255, 0.25)',
-            borderRadius: '6px',
+            border: '1px dashed rgba(0, 240, 255, 0.3)',
+            borderRadius: '8px',
             display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
+            flexDirection: 'column',
             gap: '0.5rem'
           }}>
-            <div style={{ fontSize: '0.7rem', color: 'var(--text-dim)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              📍 <b>URL đích điền vào Layma:</b> <span style={{ color: 'var(--neon-cy)', fontFamily: 'var(--font-mono)' }}>https://serveripa.proxyvip.click/getkey</span>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', flexWrap: 'wrap' }}>
+              <div>
+                <div style={{ fontSize: '0.72rem', color: '#fff', fontWeight: 700 }}>
+                  🚀 URL đích điền vào Layma (Tự động bắt GPS & báo lên Bản đồ khi vào ServerKey):
+                </div>
+                <div style={{ color: 'var(--neon-cy)', fontFamily: 'var(--font-mono)', fontSize: '0.75rem', marginTop: '3px' }}>
+                  https://serverkey-thanox.pages.dev/api/to-serverkey
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  const targetUrl = 'https://serverkey-thanox.pages.dev/api/to-serverkey';
+                  navigator.clipboard.writeText(targetUrl);
+                  alert(`Đã sao chép URL đích:\n${targetUrl}\n\n👉 Hãy dán link này vào ô "Nhập URL cần rút gọn" trên trang Layma!\n\n💡 Khi khách vượt xong link, link này sẽ tự động định vị GPS của khách và báo động đỏ "🚀 Đang ở ServerKey" lên Bản Đồ trước khi chuyển họ sang trang lấy key!`);
+                }}
+                style={{
+                  background: 'rgba(0, 240, 255, 0.18)',
+                  border: '1px solid var(--border-cy)',
+                  borderRadius: '5px',
+                  color: '#00f0ff',
+                  fontSize: '0.7rem',
+                  padding: '4px 10px',
+                  cursor: 'pointer',
+                  fontWeight: 600,
+                  whiteSpace: 'nowrap'
+                }}
+              >
+                📋 Sao chép URL định vị
+              </button>
             </div>
-            <button
-              type="button"
-              onClick={() => {
-                const targetUrl = 'https://serveripa.proxyvip.click/getkey';
-                navigator.clipboard.writeText(targetUrl);
-                alert(`Đã sao chép URL đích:\n${targetUrl}\n\n👉 Hãy dán link này vào ô "Nhập URL cần rút gọn" trên trang Layma!`);
-              }}
-              style={{
-                background: 'rgba(0, 240, 255, 0.15)',
-                border: '1px solid var(--border-cy)',
-                borderRadius: '4px',
-                color: '#fff',
-                fontSize: '0.65rem',
-                padding: '3px 8px',
-                cursor: 'pointer',
-                flexShrink: 0,
-                whiteSpace: 'nowrap'
-              }}
-            >
-              📋 Sao chép
-            </button>
+            <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.45)' }}>
+              Hoặc link gốc trực tiếp: <code style={{ color: '#a0aec0' }}>https://serveripa.proxyvip.click/getkey</code>
+            </div>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
@@ -539,6 +549,7 @@ function SessionsTab({ token, onAuthError }: { token: string; onAuthError: () =>
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStep, setFilterStep] = useState<string>('all');
+  const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
 
   const fetchSessions = useCallback(async (isBackground = false) => {
     if (!isBackground) setRefreshing(true);
@@ -645,6 +656,13 @@ function SessionsTab({ token, onAuthError }: { token: string; onAuthError: () =>
         </div>
       </div>
 
+      {/* Cyber Live GPS Map */}
+      <LiveMap 
+        sessions={sessions} 
+        selectedSessionId={selectedSessionId} 
+        onSelectSession={(id) => setSelectedSessionId(id)} 
+      />
+
       <div className="admin-section" style={{ padding: '1.25rem' }}>
         {/* Header & Controls */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.8rem', marginBottom: '1.2rem' }}>
@@ -741,11 +759,12 @@ function SessionsTab({ token, onAuthError }: { token: string; onAuthError: () =>
               <thead>
                 <tr>
                   <th style={{ minWidth: 95 }}>Thời Gian</th>
-                  <th style={{ minWidth: 120 }}>Địa Chỉ IP</th>
-                  <th style={{ minWidth: 170 }}>Ở Đâu (Vị Trí & Mạng)</th>
-                  <th style={{ minWidth: 150 }}>Ai (Thiết Bị)</th>
-                  <th style={{ minWidth: 85 }}>Gói Key</th>
-                  <th style={{ minWidth: 180 }}>Đang Vượt Như Nào</th>
+                  <th style={{ minWidth: 110 }}>Địa Chỉ IP</th>
+                  <th style={{ minWidth: 160 }}>Ở Đâu (Vị Trí & Mạng)</th>
+                  <th style={{ minWidth: 140 }}>Ai (Thiết Bị)</th>
+                  <th style={{ minWidth: 80 }}>Gói Key</th>
+                  <th style={{ minWidth: 170 }}>Đang Vượt Như Nào</th>
+                  <th style={{ minWidth: 130 }}>Bản Đồ / GPS</th>
                 </tr>
               </thead>
               <tbody>
@@ -762,7 +781,7 @@ function SessionsTab({ token, onAuthError }: { token: string; onAuthError: () =>
                     statusText = s.statusLabel || '✅ Đã nhận Key thành công';
                   } else if (isStep2) {
                     badgeClass = 'step2_pending';
-                    statusText = s.statusLabel || '🚀 Đang vượt ServerKey';
+                    statusText = s.statusLabel || '🚀 Đang ở ServerKey';
                   } else if (isStep1) {
                     badgeClass = 'step1_pending';
                     statusText = s.statusLabel || (s.step === 'step1_done' ? '🟢 Đã vượt xong Link 1' : '🟡 Đang vượt Link 1 (Admin)');
@@ -846,13 +865,60 @@ function SessionsTab({ token, onAuthError }: { token: string; onAuthError: () =>
                           {statusText}
                         </span>
                       </td>
+
+                      {/* 7. GPS & Map Actions */}
+                      <td style={{ whiteSpace: 'nowrap' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedSessionId(s.id);
+                              window.scrollTo({ top: 120, behavior: 'smooth' });
+                            }}
+                            style={{
+                              background: 'rgba(0, 240, 255, 0.12)',
+                              border: '1px solid rgba(0, 240, 255, 0.4)',
+                              color: '#00f0ff',
+                              borderRadius: '4px',
+                              padding: '3px 7px',
+                              fontSize: '0.68rem',
+                              fontWeight: 600,
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '3px',
+                              justifyContent: 'center'
+                            }}
+                          >
+                            📍 Xem trên radar
+                          </button>
+                          {typeof s.lat === 'number' && typeof s.lon === 'number' && (
+                            <a
+                              href={`https://www.google.com/maps?q=${s.lat},${s.lon}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              style={{
+                                color: 'rgba(255, 255, 255, 0.45)',
+                                fontSize: '0.63rem',
+                                textAlign: 'center',
+                                textDecoration: 'none',
+                                fontFamily: 'monospace'
+                              }}
+                              onMouseEnter={(e) => (e.currentTarget.style.color = '#00f0ff')}
+                              onMouseLeave={(e) => (e.currentTarget.style.color = 'rgba(255, 255, 255, 0.45)')}
+                            >
+                              🌍 Google Maps ({s.lat.toFixed(2)}, {s.lon.toFixed(2)}) ↗
+                            </a>
+                          )}
+                        </div>
+                      </td>
                     </tr>
                   );
                 })}
 
                 {filteredSessions.length === 0 && (
                   <tr>
-                    <td colSpan={6} style={{ textAlign: 'center', padding: '2rem', color: 'rgba(255,255,255,0.4)' }}>
+                    <td colSpan={7} style={{ textAlign: 'center', padding: '2rem', color: 'rgba(255,255,255,0.4)' }}>
                       {searchTerm ? 'Không tìm thấy phiên nào khớp với từ khóa tìm kiếm' : 'Chưa có người dùng nào truy cập gần đây'}
                     </td>
                   </tr>

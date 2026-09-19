@@ -30,6 +30,8 @@ export interface LiveSession {
   region: string;
   isp: string;
   location: string;
+  lat: number;
+  lon: number;
   device: string;
   os: string;
   deviceIcon: string;
@@ -43,6 +45,118 @@ export interface LiveSession {
 
 // In-memory sessions tracking map (keeps up to 200 recent sessions)
 const activeSessions: Map<string, LiveSession> = new Map();
+
+const VN_CITY_COORDINATES: Record<string, [number, number]> = {
+  'ha noi': [21.0285, 105.8542],
+  'hanoi': [21.0285, 105.8542],
+  'ho chi minh': [10.8231, 106.6297],
+  'ho chi minh city': [10.8231, 106.6297],
+  'saigon': [10.8231, 106.6297],
+  'tp.hcm': [10.8231, 106.6297],
+  'da nang': [16.0544, 108.2022],
+  'danang': [16.0544, 108.2022],
+  'hai phong': [20.8449, 106.6881],
+  'haiphong': [20.8449, 106.6881],
+  'can tho': [10.0452, 105.7469],
+  'cantho': [10.0452, 105.7469],
+  'dong nai': [10.9574, 106.8427],
+  'bien hoa': [10.9574, 106.8427],
+  'binh duong': [10.9804, 106.6519],
+  'thu dau mot': [10.9804, 106.6519],
+  'nha trang': [12.2388, 109.1967],
+  'khanh hoa': [12.2388, 109.1967],
+  'hue': [16.4637, 107.5909],
+  'thua thien hue': [16.4637, 107.5909],
+  'vung tau': [10.3460, 107.0843],
+  'ba ria': [10.4962, 107.1683],
+  'buon ma thuot': [12.6667, 108.0500],
+  'dak lak': [12.6667, 108.0500],
+  'quy nhon': [13.7820, 109.2192],
+  'binh dinh': [13.7820, 109.2192],
+  'long xuyen': [10.3833, 105.4167],
+  'an giang': [10.3833, 105.4167],
+  'thai nguyen': [21.5928, 105.8442],
+  'nam dinh': [20.4333, 106.1833],
+  'vinh': [18.6733, 105.6811],
+  'nghe an': [18.6733, 105.6811],
+  'thanh hoa': [19.8067, 105.7852],
+  'ha long': [20.9505, 107.0734],
+  'quang ninh': [20.9505, 107.0734],
+  'bac ninh': [21.1861, 106.0763],
+  'bac giang': [21.2731, 106.1946],
+  'vinh phuc': [21.3094, 105.6049],
+  'hai duong': [20.9388, 106.3159],
+  'da lat': [11.9404, 108.4583],
+  'lam dong': [11.9404, 108.4583],
+  'phu quoc': [10.2289, 103.9572],
+  'rach gia': [10.0125, 105.0809],
+  'kien giang': [10.0125, 105.0809],
+  'ca mau': [9.1769, 105.1524],
+  'tay ninh': [11.3102, 106.0983],
+  'binh phuoc': [11.5333, 106.9000],
+  'my tho': [10.3600, 106.3600],
+  'tien giang': [10.3600, 106.3600],
+  'ben tre': [10.2433, 106.3756],
+  'vinh long': [10.2537, 105.9722],
+  'tra vinh': [9.9347, 106.3455],
+  'soc trang': [9.6033, 105.9800],
+  'bac lieu': [9.2941, 105.7278],
+  'hau giang': [9.7844, 105.4700],
+  'dong thap': [10.4578, 105.6322],
+  'quang nam': [15.5736, 108.4800],
+  'tam ky': [15.5736, 108.4800],
+  'hoi an': [15.8801, 108.3380],
+  'quang ngai': [15.1205, 108.7922],
+  'phu yen': [13.0883, 109.3089],
+  'tuy hoa': [13.0883, 109.3089],
+  'phan rang': [11.5667, 108.9833],
+  'ninh thuan': [11.5667, 108.9833],
+  'phan thiet': [10.9289, 108.1022],
+  'binh thuan': [10.9289, 108.1022],
+  'pleiku': [13.9833, 108.0000],
+  'gia lai': [13.9833, 108.0000],
+  'kon tum': [14.3500, 108.0000],
+  'dak nong': [12.0000, 107.6833],
+  'ha tinh': [18.3433, 105.9056],
+  'dong hoi': [17.4833, 106.6000],
+  'quang binh': [17.4833, 106.6000],
+  'dong ha': [16.8167, 107.1000],
+  'quang tri': [16.8167, 107.1000],
+  'ninh binh': [20.2539, 105.9750],
+  'ha nam': [20.5456, 105.9122],
+  'hung yen': [20.6464, 106.0511],
+  'thai binh': [20.4500, 106.3400],
+  'viet tri': [21.3228, 105.4019],
+  'phu tho': [21.3228, 105.4019],
+  'tuyen quang': [21.8233, 105.2181],
+  'yen bai': [21.7167, 104.8667],
+  'lao cai': [22.4856, 103.9706],
+  'sapa': [22.3364, 103.8438],
+  'hoa binh': [20.8172, 105.3375],
+  'son la': [21.3283, 103.9147],
+  'dien bien': [21.3869, 103.0231],
+  'lai chau': [22.3964, 103.4589],
+  'ha giang': [22.8233, 104.9836],
+  'cao bang': [22.6667, 106.2500],
+  'bac kan': [22.1472, 105.8347],
+  'lang son': [21.8533, 106.7619]
+};
+
+function lookupCoordinatesByText(text: string): [number, number] | null {
+  if (!text) return null;
+  const clean = text.toLowerCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9 ]/g, ' ')
+    .trim();
+
+  for (const [key, coords] of Object.entries(VN_CITY_COORDINATES)) {
+    const cleanKey = key.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    if (clean.includes(cleanKey)) {
+      return coords;
+    }
+  }
+  return null;
+}
 
 function parseUserAgent(ua: string): { device: string; os: string; deviceIcon: string } {
   if (!ua) return { device: 'Không rõ', os: 'Trình duyệt Web', deviceIcon: '💻' };
@@ -80,12 +194,58 @@ function parseUserAgent(ua: string): { device: string; os: string; deviceIcon: s
   return { device: 'Thiết bị Web', os: 'Linux/Khác', deviceIcon: '🌐' };
 }
 
-function getGeoInfo(request: Request, clientIp: string) {
+async function getGeoInfo(request: Request, clientIp: string): Promise<{
+  city: string;
+  country: string;
+  region: string;
+  isp: string;
+  flag: string;
+  location: string;
+  lat: number;
+  lon: number;
+}> {
   const cf = (request as any).cf || {};
-  const city = request.headers.get('cf-ipcity') || cf.city || '';
-  const country = request.headers.get('cf-ipcountry') || cf.country || 'VN';
-  const region = request.headers.get('cf-region') || cf.region || '';
-  const isp = cf.asOrganization || (cf.asn ? `AS${cf.asn}` : '');
+  let city = request.headers.get('cf-ipcity') || cf.city || '';
+  let country = request.headers.get('cf-ipcountry') || cf.country || 'VN';
+  let region = request.headers.get('cf-region') || cf.region || '';
+  let isp = cf.asOrganization || (cf.asn ? `AS${cf.asn}` : '');
+  let lat = parseFloat(request.headers.get('cf-iplatitude') || cf.latitude || '0');
+  let lon = parseFloat(request.headers.get('cf-iplongitude') || cf.longitude || '0');
+
+  // Fast external IP API lookup fallback if lat/lon missing on public IP
+  if ((!lat || !lon || !city) && clientIp && clientIp !== '127.0.0.1' && !clientIp.startsWith('192.168.') && !clientIp.startsWith('10.')) {
+    try {
+      const geoRes = await fetch(`https://freeipapi.com/api/json/${clientIp}`, {
+        headers: { 'User-Agent': 'ServerKey-Geo/1.0' }
+      });
+      if (geoRes.ok) {
+        const geoData: any = await geoRes.json();
+        if (geoData.cityName && !city) city = geoData.cityName;
+        if (geoData.countryCode && !country) country = geoData.countryCode;
+        if (geoData.regionName && !region) region = geoData.regionName;
+        if (geoData.latitude && !lat) lat = parseFloat(geoData.latitude);
+        if (geoData.longitude && !lon) lon = parseFloat(geoData.longitude);
+      }
+    } catch (_) {}
+  }
+
+  // Fallback to Vietnam dictionary match if lat/lon still missing
+  if (!lat || !lon) {
+    const match = lookupCoordinatesByText(city) || lookupCoordinatesByText(region);
+    if (match) {
+      lat = match[0];
+      lon = match[1];
+    } else {
+      lat = 16.0544;
+      lon = 108.2022;
+    }
+  }
+
+  // Add micro-jitter so multiple sessions in the same city don't stack completely
+  const jitterLat = (Math.random() - 0.5) * 0.003;
+  const jitterLon = (Math.random() - 0.5) * 0.003;
+  lat = Number((lat + jitterLat).toFixed(6));
+  lon = Number((lon + jitterLon).toFixed(6));
 
   let flag = '🌐';
   if (country === 'VN') flag = '🇻🇳';
@@ -105,7 +265,7 @@ function getGeoInfo(request: Request, clientIp: string) {
     location = '🇻🇳 Việt Nam';
   }
 
-  return { city, country, region, isp, flag, location };
+  return { city, country, region, isp, flag, location, lat, lon };
 }
 
 async function recordSessionEvent(
@@ -122,7 +282,7 @@ async function recordSessionEvent(
   const now = Date.now();
   const uaString = request.headers.get('user-agent') || '';
   const parsedUa = parseUserAgent(uaString);
-  const geo = getGeoInfo(request, clientIp);
+  const geo = await getGeoInfo(request, clientIp);
 
   // Find existing session by sessionId or recent IP match
   let key = sessionId;
@@ -148,6 +308,8 @@ async function recordSessionEvent(
       region: geo.region,
       isp: geo.isp,
       location: geo.location,
+      lat: geo.lat,
+      lon: geo.lon,
       device: parsedUa.device,
       os: parsedUa.os,
       deviceIcon: parsedUa.deviceIcon,
@@ -166,6 +328,8 @@ async function recordSessionEvent(
     session.badgeClass = updates.badgeClass;
     if (geo.city && !session.city) session.city = geo.city;
     if (geo.isp && !session.isp) session.isp = geo.isp;
+    if (geo.lat && (!session.lat || session.lat === 16.0544)) session.lat = geo.lat;
+    if (geo.lon && (!session.lon || session.lon === 108.2022)) session.lon = geo.lon;
   }
 
   activeSessions.set(key, session);
@@ -581,6 +745,17 @@ export async function onRequest(context: { request: Request; env: any }) {
         },
         error: null
       }), { headers: corsHeaders });
+    }
+
+    // 6c. GET /api/to-serverkey or /serverkey (Layma destination link redirector)
+    if ((path.endsWith('/to-serverkey') || path.endsWith('/serverkey')) && request.method === 'GET') {
+      const sid = url.searchParams.get('sid') || null;
+      await recordSessionEvent(sid, request, clientIp, {
+        step: 'step2',
+        statusLabel: '🚀 Đang ở ServerKey (Vừa vượt xong Layma)',
+        badgeClass: 'step2_pending'
+      });
+      return Response.redirect('https://serveripa.proxyvip.click/getkey', 302);
     }
 
     // 7. POST /api/key/claim (User successfully finished and got key)

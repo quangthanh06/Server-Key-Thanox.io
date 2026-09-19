@@ -1,0 +1,310 @@
+/* Cyber Live Map Styles */
+.live-map-wrapper {
+  background: rgba(10, 15, 29, 0.75);
+  border: 1px solid rgba(0, 240, 255, 0.3);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 0 25px rgba(0, 240, 255, 0.1);
+  margin-bottom: 1.5rem;
+  position: relative;
+}
+
+.live-map-header {
+  padding: 0.9rem 1.25rem;
+  background: rgba(15, 23, 42, 0.85);
+  border-bottom: 1px solid rgba(0, 240, 255, 0.2);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+}
+
+.live-map-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: #fff;
+}
+
+.live-map-title .tag {
+  color: var(--neon-cy);
+  font-family: monospace;
+}
+
+.live-map-filters {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.map-filter-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #a0aec0;
+  font-size: 0.72rem;
+  padding: 0.3rem 0.65rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: 600;
+}
+
+.map-filter-btn:hover {
+  background: rgba(0, 240, 255, 0.15);
+  border-color: var(--neon-cy);
+  color: #fff;
+}
+
+.map-filter-btn.active {
+  background: rgba(0, 240, 255, 0.25);
+  border-color: var(--neon-cy);
+  color: #00f0ff;
+  box-shadow: 0 0 10px rgba(0, 240, 255, 0.3);
+}
+
+.map-filter-btn.serverkey.active {
+  background: rgba(255, 0, 85, 0.25);
+  border-color: #ff0055;
+  color: #ff3377;
+  box-shadow: 0 0 10px rgba(255, 0, 85, 0.4);
+}
+
+.map-container {
+  height: 420px;
+  width: 100%;
+  background: #090d16;
+  position: relative;
+  z-index: 1;
+}
+
+@media (max-width: 768px) {
+  .map-container {
+    height: 330px;
+  }
+}
+
+/* Custom Leaflet Dark Controls */
+.live-map-wrapper .leaflet-control-zoom a {
+  background: rgba(15, 23, 42, 0.9) !important;
+  color: #00f0ff !important;
+  border: 1px solid rgba(0, 240, 255, 0.3) !important;
+}
+
+.live-map-wrapper .leaflet-control-attribution {
+  background: rgba(10, 15, 29, 0.8) !important;
+  color: rgba(255, 255, 255, 0.4) !important;
+  font-size: 0.65rem !important;
+}
+.live-map-wrapper .leaflet-control-attribution a {
+  color: #00f0ff !important;
+}
+
+/* Cyber Pulse Radar Markers */
+.cyber-map-pin {
+  position: relative;
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cyber-pin-core {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  position: relative;
+  z-index: 2;
+  box-shadow: 0 0 12px rgba(0, 0, 0, 0.8);
+  border: 2px solid #fff;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.cyber-map-pin:hover .cyber-pin-core {
+  transform: scale(1.2);
+}
+
+.cyber-pin-ripple {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  z-index: 1;
+  animation: radar-ripple 2s infinite ease-out;
+  pointer-events: none;
+}
+
+/* Color variations */
+.pin-serverkey .cyber-pin-core {
+  background: linear-gradient(135deg, #ff0055, #990033);
+  border-color: #ff3377;
+  box-shadow: 0 0 15px #ff0055;
+}
+.pin-serverkey .cyber-pin-ripple {
+  border: 2px solid #ff0055;
+  background: rgba(255, 0, 85, 0.25);
+  animation-duration: 1.2s;
+}
+
+.pin-step1 .cyber-pin-core {
+  background: linear-gradient(135deg, #f59e0b, #b45309);
+  border-color: #fbbf24;
+  box-shadow: 0 0 12px #f59e0b;
+}
+.pin-step1 .cyber-pin-ripple {
+  border: 2px solid #f59e0b;
+  background: rgba(245, 158, 11, 0.2);
+}
+
+.pin-done .cyber-pin-core {
+  background: linear-gradient(135deg, #10b981, #047857);
+  border-color: #34d399;
+  box-shadow: 0 0 12px #10b981;
+}
+.pin-done .cyber-pin-ripple {
+  border: 2px solid #10b981;
+  background: rgba(16, 185, 129, 0.2);
+}
+
+.pin-visited .cyber-pin-core {
+  background: linear-gradient(135deg, #00f0ff, #0284c7);
+  border-color: #38bdf8;
+  box-shadow: 0 0 10px #00f0ff;
+}
+.pin-visited .cyber-pin-ripple {
+  border: 2px solid #00f0ff;
+  background: rgba(0, 240, 255, 0.18);
+}
+
+@keyframes radar-ripple {
+  0% {
+    width: 24px;
+    height: 24px;
+    opacity: 0.9;
+  }
+  100% {
+    width: 65px;
+    height: 65px;
+    opacity: 0;
+  }
+}
+
+/* Custom Cyber Leaflet Popup */
+.live-map-wrapper .leaflet-popup-content-wrapper {
+  background: rgba(15, 23, 42, 0.95) !important;
+  border: 1px solid rgba(0, 240, 255, 0.4) !important;
+  box-shadow: 0 0 20px rgba(0, 240, 255, 0.25) !important;
+  border-radius: 8px !important;
+  color: #fff !important;
+  padding: 0 !important;
+}
+
+.live-map-wrapper .leaflet-popup-tip {
+  background: rgba(15, 23, 42, 0.95) !important;
+  border: 1px solid rgba(0, 240, 255, 0.4) !important;
+}
+
+.map-popup-card {
+  padding: 0.9rem;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  min-width: 220px;
+}
+
+.map-popup-badge {
+  display: inline-block;
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 0.2rem 0.55rem;
+  border-radius: 4px;
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+}
+
+.map-popup-badge.serverkey {
+  background: rgba(255, 0, 85, 0.25);
+  color: #ff3377;
+  border: 1px solid #ff0055;
+  box-shadow: 0 0 8px rgba(255, 0, 85, 0.4);
+}
+
+.map-popup-badge.step1 {
+  background: rgba(245, 158, 11, 0.2);
+  color: #fbbf24;
+  border: 1px solid #f59e0b;
+}
+
+.map-popup-badge.done {
+  background: rgba(16, 185, 129, 0.2);
+  color: #34d399;
+  border: 1px solid #10b981;
+}
+
+.map-popup-badge.visited {
+  background: rgba(0, 240, 255, 0.2);
+  color: #00f0ff;
+  border: 1px solid #00f0ff;
+}
+
+.map-popup-location {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 0.35rem;
+}
+
+.map-popup-row {
+  font-size: 0.75rem;
+  color: #cbd5e1;
+  margin-bottom: 0.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.map-popup-row .label {
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.map-popup-row .val {
+  font-weight: 600;
+  color: #fff;
+}
+
+.map-popup-row .ip-val {
+  font-family: monospace;
+  color: #00f0ff;
+}
+
+.map-popup-btn {
+  display: block;
+  width: 100%;
+  margin-top: 0.65rem;
+  background: linear-gradient(135deg, rgba(0, 240, 255, 0.2), rgba(0, 240, 255, 0.05));
+  border: 1px solid rgba(0, 240, 255, 0.4);
+  color: #00f0ff;
+  text-align: center;
+  padding: 0.4rem 0.5rem;
+  border-radius: 5px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+
+.map-popup-btn:hover {
+  background: rgba(0, 240, 255, 0.35);
+  box-shadow: 0 0 10px rgba(0, 240, 255, 0.4);
+  color: #fff;
+}
