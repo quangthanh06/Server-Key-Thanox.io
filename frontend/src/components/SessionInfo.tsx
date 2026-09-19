@@ -30,9 +30,6 @@ export function SessionInfo({ state }: SessionInfoProps) {
   const sysLimit = stats?.dailyLimit || 3000;
   const sysLeft = Math.max(0, sysLimit - sysUsed);
 
-  const sysCls = sysUsed >= sysLimit ? 'rose' : (sysUsed >= sysLimit * 0.8 ? 'yellow' : 'green');
-  const ipCls = ipLeft === 0 ? 'rose' : (ipLeft === 1 ? 'yellow' : 'green');
-
   return (
     <div className="stats-bar">
       <div className="stat-row">
@@ -41,13 +38,13 @@ export function SessionInfo({ state }: SessionInfoProps) {
       </div>
       <div className="stat-row">
         <span className="stat-label">Lượt còn lại (IP)</span>
-        <span className={`stat-value stat-value-${ipCls}`} data-stat="ipRemaining">
+        <span className="stat-value" data-stat="ipRemaining">
           {ipLeft} / {ipLimit}
         </span>
       </div>
       <div className="stat-row">
         <span className="stat-label">Key còn lại (hệ thống)</span>
-        <span className={`stat-value stat-value-${sysCls}`} data-stat="dailyRemaining">
+        <span className="stat-value" data-stat="dailyRemaining">
           {sysLeft} / {sysLimit}
         </span>
       </div>

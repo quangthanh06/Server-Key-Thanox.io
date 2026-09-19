@@ -29,17 +29,14 @@
   color: var(--neon-cy);
 }
 
-.stat-value-green {
+.stat-value.green {
   color: var(--neon-gr);
-  text-shadow: 0 0 6px rgba(0, 255, 136, 0.35);
 }
 
-.stat-value-yellow {
+.stat-value.yellow {
   color: var(--warn);
-  text-shadow: 0 0 6px rgba(245, 255, 61, 0.35);
 }
 
-.stat-value-rose {
+.stat-value.rose {
   color: var(--danger);
-  text-shadow: 0 0 6px rgba(255, 61, 138, 0.35);
 }

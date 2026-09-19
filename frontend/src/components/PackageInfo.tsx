@@ -20,7 +20,6 @@ export function PackageInfo({ proxyType, stats }: PackageInfoProps) {
   const ipLimit = stats?.ipLimit || 2;
   
   const pct = limit > 0 ? Math.min(100, Math.round((used / limit) * 100)) : 18;
-  const cls = pct >= 80 ? 'rose' : (pct >= 50 ? 'yellow' : 'green');
 
   return (
     <div className="package-card">
@@ -39,19 +38,19 @@ export function PackageInfo({ proxyType, stats }: PackageInfoProps) {
         </div>
         <div>
           <div className="pkg-stat-label">Hôm nay</div>
-          <div className={`pkg-stat-value pkg-stat-value-${cls}`} data-stat="dailyUsed">
+          <div className="pkg-stat-value" data-stat="dailyUsed">
             {used} / {limit}
           </div>
         </div>
         <div>
           <div className="pkg-stat-label">IP này</div>
-          <div className="pkg-stat-value pkg-stat-value-green">
+          <div className="pkg-stat-value">
             {ipUsed} / {ipLimit}
           </div>
         </div>
       </div>
       <div className="pkg-progress" aria-label="Lượt hệ thống hôm nay">
-        <div className={`pkg-progress-bar pkg-progress-${cls}`} style={{ width: `${pct}%` }}></div>
+        <div className="pkg-progress-bar" style={{ width: `${pct}%` }}></div>
         <div className="pkg-progress-text">Đã dùng {pct}% — {used}/{limit} key hôm nay</div>
       </div>
     </div>
