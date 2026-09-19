@@ -19,6 +19,7 @@ export function LiveMap({ sessions, selectedSessionId, onBanIp }: LiveMapProps) 
   const tileLayerRef = useRef<L.Layer | null>(null);
   const markersRef = useRef<Map<string, L.Marker>>(new Map());
   const clickedMarkerRef = useRef<L.Marker | null>(null);
+  const hasAutoCenteredRef = useRef<boolean>(false);
 
   const [mapTheme, setMapTheme] = useState<MapTheme>(() => {
     return (localStorage.getItem('map_tile_theme') as MapTheme) || 'streets';
@@ -43,7 +44,7 @@ export function LiveMap({ sessions, selectedSessionId, onBanIp }: LiveMapProps) 
     };
   }, [onBanIp]);
 
-  // Function to apply tile layers
+  // Function to apply tile layers without destroying the map
   const applyTileLayer = useCallback((map: L.Map, theme: MapTheme) => {
     if (tileLayerRef.current) {
       map.removeLayer(tileLayerRef.current);
@@ -78,36 +79,51 @@ export function LiveMap({ sessions, selectedSessionId, onBanIp }: LiveMapProps) 
     }
   }, []);
 
-  // Initialize Map
+  // Initialize Map ONCE on mount
   useEffect(() => {
     if (!mapContainerRef.current || mapRef.current) return;
 
-    // Center of Vietnam
+    // Find first session with coordinates to center on
+    const firstCoord = sessions.find((s) => typeof s.lat === 'number' && typeof s.lon === 'number');
+    const initialCenter: [number, number] = firstCoord ? [firstCoord.lat, firstCoord.lon] : [16.0544, 108.2022];
+    const initialZoom = firstCoord ? 12 : 6;
+
     const map = L.map(mapContainerRef.current, {
-      center: [16.0544, 108.2022],
-      zoom: 6,
+      center: initialCenter,
+      zoom: initialZoom,
       minZoom: 3,
       maxZoom: 20,
       zoomControl: true,
       scrollWheelZoom: true
     });
 
-    applyTileLayer(map, mapTheme);
+    const initialTheme = (localStorage.getItem('map_tile_theme') as MapTheme) || 'streets';
+    applyTileLayer(map, initialTheme);
     mapRef.current = map;
+
+    if (firstCoord) {
+      hasAutoCenteredRef.current = true;
+    }
 
     return () => {
       map.remove();
       mapRef.current = null;
+      markersRef.current.clear();
+      clickedMarkerRef.current = null;
     };
-  }, [applyTileLayer, mapTheme]);
+  }, []); // Run only once
+
+  // Update tile layer whenever theme changes
+  useEffect(() => {
+    if (mapRef.current) {
+      applyTileLayer(mapRef.current, mapTheme);
+    }
+  }, [mapTheme, applyTileLayer]);
 
   // Switch Map Theme
   const handleThemeChange = (newTheme: MapTheme) => {
     setMapTheme(newTheme);
     localStorage.setItem('map_tile_theme', newTheme);
-    if (mapRef.current) {
-      applyTileLayer(mapRef.current, newTheme);
-    }
   };
 
   // Handle Click ANYWHERE on the map -> Instant pinpoint + reverse geocode
@@ -121,12 +137,18 @@ export function LiveMap({ sessions, selectedSessionId, onBanIp }: LiveMapProps) 
       const targetIcon = L.divIcon({
         className: 'cyber-map-pin pin-target',
         html: `
-          <div class="cyber-pin-ripple"></div>
-          <div class="cyber-pin-core">🎯</div>
+          <div class="cyber-pin-wrapper">
+            <div class="cyber-pin-label" style="border-color: #f59e0b; color: #fef08a;">
+              <span class="live-dot" style="background: #f59e0b; box-shadow: 0 0 6px #f59e0b;"></span>
+              📍 Vị trí bạn vừa bấm
+            </div>
+            <div class="cyber-pin-ripple"></div>
+            <div class="cyber-pin-core">🎯</div>
+          </div>
         `,
         iconSize: [36, 36],
         iconAnchor: [18, 18],
-        popupAnchor: [0, -18]
+        popupAnchor: [0, -22]
       });
 
       const buildPopupContent = (addressText: string) => `
@@ -179,6 +201,9 @@ export function LiveMap({ sessions, selectedSessionId, onBanIp }: LiveMapProps) 
       if (!clickedMarkerRef.current) {
         clickedMarkerRef.current = L.marker([lat, lng], { icon: targetIcon }).addTo(map);
       } else {
+        if (!map.hasLayer(clickedMarkerRef.current)) {
+          clickedMarkerRef.current.addTo(map);
+        }
         clickedMarkerRef.current.setLatLng([lat, lng]);
         clickedMarkerRef.current.setIcon(targetIcon);
       }
@@ -208,7 +233,7 @@ export function LiveMap({ sessions, selectedSessionId, onBanIp }: LiveMapProps) 
 
     // Filter sessions
     const validSessions = sessions.filter((s) => {
-      const hasCoords = typeof s.lat === 'number' && typeof s.lon === 'number';
+      const hasCoords = typeof s.lat === 'number' && typeof s.lon === 'number' && s.lat !== 0 && s.lon !== 0;
       if (!hasCoords) return false;
 
       const isStep2 = s.step === 'step2' || s.status === 'step2_pending';
@@ -220,6 +245,13 @@ export function LiveMap({ sessions, selectedSessionId, onBanIp }: LiveMapProps) 
       if (filter === 'done') return isDone;
       return true;
     });
+
+    // Auto center on first load if not done yet
+    if (!hasAutoCenteredRef.current && validSessions.length > 0) {
+      const target = validSessions[0];
+      hasAutoCenteredRef.current = true;
+      map.flyTo([target.lat, target.lon], 13, { duration: 1.0 });
+    }
 
     // Remove old markers that no longer exist
     const currentIds = new Set(validSessions.map((s) => s.id));
@@ -241,38 +273,49 @@ export function LiveMap({ sessions, selectedSessionId, onBanIp }: LiveMapProps) 
       let iconSymbol = '📱';
       let badgeLabel = '⚡ Mới vào web';
       let badgeClass = 'visited';
+      let pillText = `${s.city || 'Việt Nam'} (${s.device || 'Khách'})`;
 
       if (isBlocked) {
         pinTypeClass = 'pin-blocked';
         iconSymbol = '🚫';
         badgeLabel = '🚫 ĐÃ BỊ CẤM (BANNED)';
         badgeClass = 'blocked';
+        pillText = `🚫 BANNED: ${s.city || s.ip}`;
       } else if (isStep2) {
         pinTypeClass = 'pin-serverkey';
         iconSymbol = '🚀';
         badgeLabel = '🚀 ĐANG Ở SERVERKEY';
         badgeClass = 'serverkey';
+        pillText = `🚀 ServerKey: ${s.city || 'Khách'}`;
       } else if (isDone) {
         pinTypeClass = 'pin-done';
         iconSymbol = '✅';
         badgeLabel = '✅ ĐÃ LẤY KEY';
         badgeClass = 'done';
+        pillText = `✅ Đã Nhận Key: ${s.city || 'Khách'}`;
       } else if (isStep1) {
         pinTypeClass = 'pin-step1';
         iconSymbol = '🟡';
         badgeLabel = '🟡 ĐANG VƯỢT LINK';
         badgeClass = 'step1';
+        pillText = `🟡 Vượt Link: ${s.city || 'Khách'}`;
       }
 
       const customIcon = L.divIcon({
         className: `cyber-map-pin ${pinTypeClass}`,
         html: `
-          <div class="cyber-pin-ripple"></div>
-          <div class="cyber-pin-core">${iconSymbol}</div>
+          <div class="cyber-pin-wrapper">
+            <div class="cyber-pin-label">
+              <span class="live-dot"></span>
+              <span>${pillText}</span>
+            </div>
+            <div class="cyber-pin-ripple"></div>
+            <div class="cyber-pin-core">${iconSymbol}</div>
+          </div>
         `,
-        iconSize: [34, 34],
-        iconAnchor: [17, 17],
-        popupAnchor: [0, -18]
+        iconSize: [36, 36],
+        iconAnchor: [18, 18],
+        popupAnchor: [0, -26]
       });
 
       const buildUserPopupHtml = (addr?: string) => `
@@ -351,7 +394,7 @@ export function LiveMap({ sessions, selectedSessionId, onBanIp }: LiveMapProps) 
       let marker = markersRef.current.get(s.id);
       if (!marker) {
         marker = L.marker([s.lat, s.lon], { icon: customIcon }).addTo(map);
-        marker.bindPopup(buildUserPopupHtml(), { maxWidth: 300, closeButton: true });
+        marker.bindPopup(buildUserPopupHtml(), { maxWidth: 320, closeButton: true });
 
         // When popup opens, asynchronously fetch exact street address
         marker.on('popupopen', async () => {
@@ -361,6 +404,9 @@ export function LiveMap({ sessions, selectedSessionId, onBanIp }: LiveMapProps) 
 
         markersRef.current.set(s.id, marker);
       } else {
+        if (!map.hasLayer(marker)) {
+          marker.addTo(map);
+        }
         marker.setLatLng([s.lat, s.lon]);
         marker.setIcon(customIcon);
       }
@@ -380,6 +426,18 @@ export function LiveMap({ sessions, selectedSessionId, onBanIp }: LiveMapProps) 
       }
     }
   }, [selectedSessionId, sessions]);
+
+  // Jump to active user
+  const latestValidSession = sessions.find((s) => typeof s.lat === 'number' && typeof s.lon === 'number');
+
+  const handleJumpToActive = () => {
+    if (!mapRef.current || !latestValidSession) return;
+    mapRef.current.flyTo([latestValidSession.lat, latestValidSession.lon], 17, { duration: 1.2 });
+    const marker = markersRef.current.get(latestValidSession.id);
+    if (marker) {
+      setTimeout(() => marker.openPopup(), 1300);
+    }
+  };
 
   // Reset View to whole Vietnam
   const handleResetView = () => {
@@ -428,6 +486,25 @@ export function LiveMap({ sessions, selectedSessionId, onBanIp }: LiveMapProps) 
         </div>
 
         <div className="live-map-filters">
+          {/* Quick Jump to Active User */}
+          {latestValidSession && (
+            <button
+              type="button"
+              className="map-filter-btn active"
+              onClick={handleJumpToActive}
+              title="Bay ngay đến vị trí của khách hàng này"
+              style={{
+                background: 'linear-gradient(135deg, rgba(0, 240, 255, 0.35), rgba(0, 240, 255, 0.15))',
+                borderColor: '#00f0ff',
+                color: '#fff',
+                fontWeight: 700,
+                boxShadow: '0 0 10px rgba(0, 240, 255, 0.4)'
+              }}
+            >
+              📍 ĐẾN VỊ TRÍ KHÁCH ({latestValidSession.city || 'Gần nhất'}) 🎯
+            </button>
+          )}
+
           <button
             type="button"
             className={`map-filter-btn ${filter === 'all' ? 'active' : ''}`}
@@ -482,10 +559,10 @@ export function LiveMap({ sessions, selectedSessionId, onBanIp }: LiveMapProps) 
         gap: '0.5rem'
       }}>
         <div>
-          💡 <strong>Mẹo xem nơi ở:</strong> Bạn có thể <span style={{ color: '#00f0ff' }}>click vào bất kỳ điểm nào trên bản đồ</span> hoặc bấm <span style={{ color: '#00f0ff' }}>"📍 Radar"</span> trong bảng để phóng to sát nóc nhà và xem địa chỉ chi tiết!
+          💡 <strong>Mẹo xem nơi ở:</strong> Bấm <span style={{ color: '#00f0ff', fontWeight: 700 }}>"📍 ĐẾN VỊ TRÍ KHÁCH"</span> hoặc <span style={{ color: '#00f0ff' }}>click vào bất kỳ điểm nào trên bản đồ</span> để phóng to sát nóc nhà và xem địa chỉ chi tiết!
         </div>
         <div style={{ color: '#10b981', fontWeight: 600 }}>
-          {mapTheme === 'satellite' ? '🛰️ Đang bật: Vệ Tinh Trực Quan' : mapTheme === 'streets' ? '🗺️ Đang bật: Đường Phố Màu Sắc' : '🌌 Đang bật: Cyber Tối'}
+          {mapTheme === 'satellite' ? '🛰️ Đang bật: Vệ Tinh Trực Quan (Xem Nóc Nhà)' : mapTheme === 'streets' ? '🗺️ Đang bật: Đường Phố Màu Sắc' : '🌌 Đang bật: Cyber Tối'}
         </div>
       </div>
     </div>
