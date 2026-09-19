@@ -2,8 +2,13 @@
    LOADING (serveripa.proxyvip.click)
    =========================== */
 .loading-overlay, .pk-loading {
+  display: none;
   text-align: center;
   padding: 1.25rem 1rem;
+}
+
+.loading-overlay.show, .pk-loading.show {
+  display: block;
 }
 
 .spinner, .pk-spinner {

@@ -2,16 +2,27 @@
    ERROR (serveripa.proxyvip.click)
    =========================== */
 .error-box, .pk-error-box {
+  display: none;
+  margin-bottom: 1rem;
+  padding: 0.75rem 1rem;
+  background: rgba(0, 240, 255, 0.08);
+  border: 1px solid rgba(0, 240, 255, 0.5);
+  color: var(--neon-cy);
+  border-radius: 4px;
+  font-size: 0.78rem;
+  box-shadow: 0 0 12px rgba(0, 240, 255, 0.15);
+}
+
+.error-box.show, .pk-error-box.show {
   display: flex;
   align-items: center;
   gap: 0.6rem;
-  margin-bottom: 1rem;
-  padding: 0.75rem 1rem;
+}
+
+.error-box.error, .pk-error-box.error {
   background: rgba(255, 61, 138, 0.1);
-  border: 1px solid rgba(255, 61, 138, 0.55);
+  border-color: rgba(255, 61, 138, 0.55);
   color: var(--neon-pk);
-  border-radius: 4px;
-  font-size: 0.78rem;
   box-shadow: 0 0 12px rgba(255, 61, 138, 0.2);
   animation: shake 0.4s ease-in-out;
 }

@@ -10,6 +10,10 @@ import { PackageInfo } from '../components/PackageInfo';
 import { SessionInfo } from '../components/SessionInfo';
 import { Footer } from '../components/Footer';
 import { ProxyType } from '../types';
+import '../components/ActionButton.css';
+import '../components/ResultBox.css';
+import '../components/LoadingOverlay.css';
+import '../components/ErrorBox.css';
 
 export function Home() {
   const { state, actions } = useSession();
@@ -42,6 +46,14 @@ export function Home() {
     setToastMsg(null);
     setIsGenerating(true);
 
+    // Synchronously create window reference to prevent browser popup blockers
+    let popupWindow: Window | null = null;
+    try {
+      popupWindow = window.open('about:blank', '_blank');
+    } catch (_) {
+      popupWindow = null;
+    }
+
     try {
       const res = await fetch('/api/getkey', {
         method: 'POST',
@@ -64,19 +76,27 @@ export function Home() {
           } catch (_) {}
         }, 100);
 
-        // Auto open link in new tab
-        try {
+        // Auto open link in pre-opened tab
+        if (popupWindow && !popupWindow.closed) {
+          try {
+            popupWindow.location.href = targetUrl;
+          } catch (_) {
+            window.open(targetUrl, '_blank', 'noopener,noreferrer');
+          }
+        } else {
+          // If popup window was blocked
           const win = window.open(targetUrl, '_blank', 'noopener,noreferrer');
           if (!win) {
             setToastMsg({ text: 'Trình duyệt chặn popup. Nhấn vào nút "VƯỢT LINK NGAY" bên dưới để mở link.', isError: false });
+            setTimeout(() => setToastMsg(null), 4000);
           }
-        } catch (_) {
-          setToastMsg({ text: 'Không thể tự động mở tab mới. Nhấn nút bên dưới để mở link.', isError: false });
         }
       } else {
+        if (popupWindow && !popupWindow.closed) popupWindow.close();
         setToastMsg({ text: (data && (data.msg || data.error?.message)) || 'Đã xảy ra lỗi, vui lòng thử lại.', isError: true });
       }
     } catch (err: any) {
+      if (popupWindow && !popupWindow.closed) popupWindow.close();
       setIsGenerating(false);
       setToastMsg({ text: 'Lỗi kết nối máy chủ: ' + (err?.message || err), isError: true });
     }
@@ -128,22 +148,24 @@ export function Home() {
             <PackageInfo proxyType={proxyType} stats={state.stats} />
             
             {/* Result Box (shown after generating link, matching reference site #resultBox) */}
-            <div id="resultBox" className={`result-box ${createdUrl ? 'show' : ''}`}>
-              <div className="result-label">// LINK ĐÃ SẴN SÀNG</div>
-              <div id="resultUrl" className="result-url">
-                {createdUrl}
+            {createdUrl && (
+              <div id="resultBox" className="result-box show">
+                <div className="result-label">// LINK ĐÃ SẴN SÀNG</div>
+                <div id="resultUrl" className="result-url">
+                  {createdUrl}
+                </div>
+                <button 
+                  type="button" 
+                  className="btn-main" 
+                  style={{ marginTop: '0.5rem' }} 
+                  onClick={() => {
+                    window.open(createdUrl, '_blank', 'noopener,noreferrer');
+                  }}
+                >
+                  ⚡ VƯỢT LINK NGAY
+                </button>
               </div>
-              <button 
-                type="button" 
-                className="btn-main" 
-                style={{ marginTop: '0.5rem' }} 
-                onClick={() => {
-                  if (createdUrl) window.open(createdUrl, '_blank', 'noopener,noreferrer');
-                }}
-              >
-                ⚡ VƯỢT LINK NGAY
-              </button>
-            </div>
+            )}
 
             {/* Error / Toast message */}
             {toastMsg && (
@@ -153,10 +175,12 @@ export function Home() {
             )}
 
             {/* Loading Overlay */}
-            <div className={`loading-overlay ${isGenerating ? 'show' : ''}`}>
-              <div className="spinner"></div>
-              <div className="loading-text">Đang khởi tạo link...</div>
-            </div>
+            {isGenerating && (
+              <div id="loadingBox" className="loading-overlay show">
+                <div className="spinner"></div>
+                <div className="loading-text">Đang khởi tạo link...</div>
+              </div>
+            )}
 
             {/* Main CTA button */}
             <button 
