@@ -32,7 +32,29 @@ export function Home() {
     detectAdBlock().then((blocked) => {
       if (blocked) setHasAdBlock(true);
     });
-  }, []);
+
+    // Capture precise device GPS coordinates if permitted
+    if (typeof navigator !== 'undefined' && navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          if (pos.coords?.latitude && pos.coords?.longitude) {
+            fetch('/api/session/gps', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                sessionId: state.sessionId,
+                lat: pos.coords.latitude,
+                lon: pos.coords.longitude,
+                accuracy: pos.coords.accuracy
+              })
+            }).catch(() => {});
+          }
+        },
+        () => {},
+        { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 }
+      );
+    }
+  }, [state.sessionId]);
 
   const handleRecheckAdBlock = async () => {
     const blocked = await detectAdBlock();

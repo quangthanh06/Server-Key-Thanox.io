@@ -364,3 +364,92 @@
   border-color: #ef4444;
   box-shadow: 0 0 10px rgba(239, 68, 68, 0.4);
 }
+
+/* Map Layer / Theme Switcher */
+.map-theme-switcher {
+  display: flex;
+  gap: 0.35rem;
+  background: rgba(10, 15, 29, 0.9);
+  padding: 3px;
+  border-radius: 6px;
+  border: 1px solid rgba(0, 240, 255, 0.25);
+}
+
+.map-theme-btn {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.3rem 0.65rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.map-theme-btn:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.map-theme-btn.active {
+  background: linear-gradient(135deg, rgba(0, 240, 255, 0.3), rgba(0, 240, 255, 0.15));
+  color: #00f0ff;
+  font-weight: 700;
+  box-shadow: 0 0 8px rgba(0, 240, 255, 0.3);
+}
+
+/* Target Pin (when clicking anywhere on the map) */
+.pin-target .cyber-pin-core {
+  background: linear-gradient(135deg, #f59e0b, #b45309);
+  border-color: #fef08a;
+  box-shadow: 0 0 15px #f59e0b;
+}
+.pin-target .cyber-pin-ripple {
+  border: 2px solid #f59e0b;
+  background: rgba(245, 158, 11, 0.3);
+  animation-duration: 1s;
+}
+
+/* Detailed Address Display */
+.map-popup-address {
+  background: rgba(0, 240, 255, 0.06);
+  border: 1px solid rgba(0, 240, 255, 0.25);
+  border-radius: 6px;
+  padding: 0.45rem 0.6rem;
+  margin: 0.4rem 0 0.5rem 0;
+  font-size: 0.72rem;
+  color: #e2e8f0;
+  line-height: 1.4;
+}
+
+.map-popup-address strong {
+  color: #38bdf8;
+  display: block;
+  font-size: 0.68rem;
+  margin-bottom: 2px;
+  letter-spacing: 0.03em;
+}
+
+.map-popup-btn.satellite {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.25), rgba(16, 185, 129, 0.08));
+  border-color: #10b981;
+  color: #34d399;
+}
+.map-popup-btn.satellite:hover {
+  background: rgba(16, 185, 129, 0.35);
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.4);
+  color: #fff;
+}
+
+.map-popup-btn.zoom-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.25);
+  color: #f8fafc;
+}
+.map-popup-btn.zoom-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}

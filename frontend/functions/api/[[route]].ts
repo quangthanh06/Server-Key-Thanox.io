@@ -763,6 +763,35 @@ export async function onRequest(context: { request: Request; env: any }) {
       }), { headers: corsHeaders });
     }
 
+    // 2b. POST /api/session/gps (Precise Device GPS from browser)
+    if (path.endsWith('/session/gps') && request.method === 'POST') {
+      let body: any = {};
+      try { body = await request.json(); } catch (_) {}
+      const sid = body.sessionId;
+      const lat = parseFloat(body.lat);
+      const lon = parseFloat(body.lon);
+      const accuracy = typeof body.accuracy === 'number' ? Math.round(body.accuracy) : null;
+
+      if (!isNaN(lat) && !isNaN(lon) && lat !== 0 && lon !== 0) {
+        for (const [id, sess] of activeSessions.entries()) {
+          if ((sid && id === sid) || sess.ip === clientIp) {
+            sess.lat = lat;
+            sess.lon = lon;
+            sess.location = accuracy ? `🎯 GPS Thiết bị (±${accuracy}m)` : `🎯 GPS Thiết bị chuẩn xác`;
+            sess.updatedAt = Date.now();
+            break;
+          }
+        }
+        await saveSessionsToCache();
+      }
+
+      return new Response(JSON.stringify({
+        success: true,
+        data: { updated: true, lat, lon },
+        error: null
+      }), { headers: corsHeaders });
+    }
+
     // 3. POST /api/select-type
     if (path.endsWith('/select-type') && request.method === 'POST') {
       let body: any = {};
