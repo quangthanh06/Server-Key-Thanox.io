@@ -1,6 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useSession } from '../state/useSession';
-import { api } from '../api/endpoints';
 import { Header } from '../components/Header';
 import { AnnouncementBanner } from '../components/AnnouncementBanner';
 import { MaintenanceScreen } from '../components/MaintenanceScreen';
@@ -8,171 +7,18 @@ import { LimitReachedCard } from '../components/LimitReachedCard';
 import { Card } from '../components/Card';
 import { TypeSelector } from '../components/TypeSelector';
 import { PackageInfo } from '../components/PackageInfo';
-import { ResultBox } from '../components/ResultBox';
-import { ErrorBox } from '../components/ErrorBox';
-import { LoadingOverlay } from '../components/LoadingOverlay';
-import { ActionButton } from '../components/ActionButton';
 import { SessionInfo } from '../components/SessionInfo';
 import { Footer } from '../components/Footer';
+import { ProxyType } from '../types';
 
 export function Home() {
   const { state, actions } = useSession();
-  const [bypassCooldown, setBypassCooldown] = useState(0);
+  const [createdUrl, setCreatedUrl] = useState<string | null>(null);
+  const [btnText, setBtnText] = useState<string | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [toastMsg, setToastMsg] = useState<{ text: string; isError?: boolean } | null>(null);
 
-  // Initialize active countdown across page reloads or tab switches
-  useEffect(() => {
-    try {
-      const savedEnd = localStorage.getItem('thanox_bypass_cooldown_end');
-      if (savedEnd) {
-        const remaining = Math.max(0, Math.ceil((parseInt(savedEnd, 10) - Date.now()) / 1000));
-        if (remaining > 0) {
-          setBypassCooldown(remaining);
-        } else {
-          localStorage.removeItem('thanox_bypass_cooldown_end');
-        }
-      }
-    } catch (_) {}
-  }, []);
-
-  // Anti-cheat cooldown: 60s timer (1 phút) when entering step1 or step2
-  useEffect(() => {
-    if (state.status === 'step1_pending' || state.status === 'step2_pending') {
-      const cd = state.stats?.bypassCooldownSeconds || 60;
-      let remaining = cd;
-      try {
-        const savedEnd = localStorage.getItem('thanox_bypass_cooldown_end');
-        if (savedEnd) {
-          const rem = Math.max(0, Math.ceil((parseInt(savedEnd, 10) - Date.now()) / 1000));
-          if (rem > 0) remaining = rem;
-          else localStorage.setItem('thanox_bypass_cooldown_end', String(Date.now() + cd * 1000));
-        } else {
-          localStorage.setItem('thanox_bypass_cooldown_end', String(Date.now() + cd * 1000));
-        }
-      } catch (_) {}
-      setBypassCooldown(remaining);
-    }
-  }, [state.status, state.stats?.bypassCooldownSeconds]);
-
-  useEffect(() => {
-    if (bypassCooldown <= 0) return;
-    const timer = setInterval(() => {
-      setBypassCooldown((prev) => {
-        if (prev <= 1) {
-          try { localStorage.removeItem('thanox_bypass_cooldown_end'); } catch (_) {}
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [bypassCooldown]);
-
-  const [passcode, setPasscode] = useState('');
-  const [currentStepIndex, setCurrentStepIndex] = useState(0);
-  const [completedSteps, setCompletedSteps] = useState(0);
-  const [activeBypassUrl, setActiveBypassUrl] = useState('');
-
-  const defaultBypassLinks = [
-    { id: '1', title: 'Máy chủ xác thực 1 (Layma 1)', url: 'https://layma.net/RwlXK7AH6', passcode: '' },
-    { id: '2', title: 'Máy chủ xác thực 2 (Layma 2)', url: 'https://layma.net/i1vAwGviV', passcode: '' }
-  ];
-
-  const bypassLinks = (state.stats?.bypassLinks && state.stats.bypassLinks.length > 0)
-    ? state.stats.bypassLinks
-    : (state.stats?.step1BypassUrl
-      ? [
-          { id: '1', title: 'Máy chủ xác thực 1 (Layma 1)', url: state.stats.step1BypassUrl, passcode: state.stats.step1Passcode || '' },
-          { id: '2', title: 'Máy chủ xác thực 2 (Layma 2)', url: 'https://layma.net/i1vAwGviV', passcode: '' }
-        ]
-      : defaultBypassLinks);
-
-  const totalBypassSteps = bypassLinks.length;
-  const currentLink = bypassLinks[currentStepIndex] || bypassLinks[0];
-
-  // Cross-tab synchronization via storage event (e.g. Tab 2 redirects from Layma -> Tab 1 updates instantly)
-  useEffect(() => {
-    const handleStorage = (e: StorageEvent) => {
-      if (e.key === 'thanox_done_step' && e.newValue) {
-        const val = parseInt(e.newValue, 10) || 0;
-        if (val > 0) {
-          setCompletedSteps(val);
-          setCurrentStepIndex(Math.min(val, totalBypassSteps - 1));
-          setBypassCooldown(0);
-          try { localStorage.removeItem('thanox_bypass_cooldown_end'); } catch (_) {}
-        }
-      }
-    };
-    window.addEventListener('storage', handleStorage);
-    return () => window.removeEventListener('storage', handleStorage);
-  }, [totalBypassSteps]);
-
-  // Auto-detect completed step on page load (from ?done=1 or #?done=1 or referrer or pending step)
-  useEffect(() => {
-    try {
-      // 1. Check search query string
-      const searchParams = new URLSearchParams(window.location.search);
-      // 2. Check hash query string (e.g. /#?done=1 or /#/?done=1)
-      const hashQuery = window.location.hash.includes('?') ? window.location.hash.split('?')[1] : '';
-      const hashParams = new URLSearchParams(hashQuery);
-
-      const doneParam = searchParams.get('done') || hashParams.get('done');
-      const stepParam = searchParams.get('step') || hashParams.get('step');
-
-      let doneVal = 0;
-      if (doneParam) {
-        doneVal = parseInt(doneParam, 10) || 0;
-      } else if (stepParam) {
-        doneVal = (parseInt(stepParam, 10) || 1) - 1;
-      }
-
-      // 3. Check document.referrer (Did visitor return from Layma?)
-      const ref = (typeof document !== 'undefined' ? document.referrer || '' : '').toLowerCase();
-      const isFromLayma = ref.includes('layma') || ref.includes('short') || ref.includes('link');
-      const pendingStep = localStorage.getItem('thanox_pending_step');
-
-      if (!doneVal && (isFromLayma || (pendingStep && window.location.hash.includes('#')))) {
-        doneVal = pendingStep ? parseInt(pendingStep, 10) : 1;
-      }
-
-      // 4. Check existing saved done step in localStorage
-      if (!doneVal) {
-        const saved = localStorage.getItem('thanox_done_step');
-        const savedTime = localStorage.getItem('thanox_done_step_time');
-        if (saved && savedTime) {
-          const age = Date.now() - parseInt(savedTime, 10);
-          if (age < 3600 * 1000) { // Valid for 1 hour
-            doneVal = parseInt(saved, 10) || 0;
-          } else {
-            localStorage.removeItem('thanox_done_step');
-            localStorage.removeItem('thanox_done_step_time');
-          }
-        }
-      }
-
-      if (doneVal > 0 && totalBypassSteps > 0) {
-        localStorage.setItem('thanox_done_step', String(doneVal));
-        localStorage.setItem('thanox_done_step_time', String(Date.now()));
-        localStorage.removeItem('thanox_pending_step');
-        localStorage.removeItem('thanox_bypass_cooldown_end');
-        setBypassCooldown(0);
-
-        setCompletedSteps(doneVal);
-        const nextStep = Math.min(doneVal, totalBypassSteps - 1);
-        setCurrentStepIndex(nextStep);
-        if (doneVal < totalBypassSteps) {
-          const nextLink = bypassLinks[nextStep];
-          setActiveBypassUrl(nextLink?.url || '');
-        }
-
-        if (doneParam || stepParam) {
-          try {
-            const cleanUrl = window.location.pathname + window.location.hash.split('?')[0];
-            window.history.replaceState({}, '', cleanUrl);
-          } catch (_) {}
-        }
-      }
-    } catch (_) {}
-  }, [totalBypassSteps]);
+  const proxyType: ProxyType = state.proxyType || 'ipa';
 
   const isIpLimitReached = Boolean(
     state.stats && 
@@ -180,146 +26,74 @@ export function Home() {
     state.stats.ipUsed >= state.stats.ipLimit
   );
 
-  const handleActionClick = () => {
-    if (isIpLimitReached) return;
+  // Switch proxy type (IPA / VPN) — resets result and button text
+  const handleSelectType = (type: ProxyType) => {
+    actions.selectType(type);
+    setCreatedUrl(null);
+    setBtnText(null);
+    setToastMsg(null);
+  };
 
-    // If user has already completed all steps, go straight to ServerKey
-    if (completedSteps >= totalBypassSteps && totalBypassSteps > 0) {
-      try {
-        localStorage.removeItem('thanox_done_step');
-        localStorage.removeItem('thanox_done_step_time');
-        localStorage.removeItem('thanox_bypass_cooldown_end');
-      } catch (_) {}
-      actions.completeStep1AndStartStep2();
-      setCompletedSteps(0);
-      setCurrentStepIndex(0);
-      return;
-    }
+  // Main CTA button click: doGetKey (matching reference site getkey.js)
+  const doGetKey = async () => {
+    if (isIpLimitReached || isGenerating) return;
 
-    if (state.status === 'created' || state.status === 'type_selected') {
-      if (totalBypassSteps === 0) {
-        window.open('https://serveripa.proxyvip.click/getkey', '_blank', 'noopener,noreferrer');
-        return;
-      }
+    setCreatedUrl(null);
+    setToastMsg(null);
+    setIsGenerating(true);
 
-      const targetStep = completedSteps > 0 ? Math.min(completedSteps, totalBypassSteps - 1) : 0;
-      setCurrentStepIndex(targetStep);
-      const targetLink = bypassLinks[targetStep];
-      const targetUrl = targetLink?.url || state.stats?.step1BypassUrl || 'https://thanoxstorebot.shop/?step=1';
-      setActiveBypassUrl(targetUrl);
+    try {
+      const res = await fetch('/api/getkey', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ keyType: proxyType, sessionId: state.sessionId })
+      });
+      const data = await res.json();
+      setIsGenerating(false);
 
-      // Start 60s cooldown (1 phút) — DO NOT set thanox_done_step yet!
-      const cd = state.stats?.bypassCooldownSeconds || 60;
-      setBypassCooldown(cd);
-      try {
-        localStorage.setItem('thanox_pending_step', String(targetStep + 1));
-        localStorage.setItem('thanox_bypass_start_time', String(Date.now()));
-        localStorage.setItem('thanox_bypass_cooldown_end', String(Date.now() + cd * 1000));
-      } catch (_) {}
+      const targetUrl = data?.url || data?.data?.url || state.stats?.step1BypassUrl || 'https://layma.net/RwlXK7AH6';
 
-      actions.startBypass(targetUrl, targetStep, totalBypassSteps, targetLink?.title);
-    } else if (state.status === 'step1_pending') {
-      // Must not be in cooldown
-      if (bypassCooldown > 0) {
-        alert(`Vui lòng hoàn thành vượt link! Hệ thống đang giám sát và bạn cần đợi thêm ${bypassCooldown} giây nữa để xác nhận.`);
-        return;
-      }
+      if (data && (data.ok || data.success) && targetUrl) {
+        setCreatedUrl(targetUrl);
+        setBtnText('✓ ĐÃ TẠO — LẤY THÊM');
 
-      const requiredPasscode = currentLink?.passcode?.trim();
-      if (requiredPasscode && passcode.trim() !== requiredPasscode) {
-        alert(`Mã xác nhận Bước ${currentStepIndex + 1} chưa chính xác! Vui lòng hoàn thành vượt link để lấy mã xác nhận.`);
-        return;
-      }
+        // Smooth scroll to result box on mobile
+        setTimeout(() => {
+          try {
+            document.getElementById('resultBox')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          } catch (_) {}
+        }, 100);
 
-      const newDone = currentStepIndex + 1;
-      setCompletedSteps(newDone);
-      try {
-        localStorage.setItem('thanox_done_step', String(newDone));
-        localStorage.setItem('thanox_done_step_time', String(Date.now()));
-        localStorage.removeItem('thanox_pending_step');
-        localStorage.removeItem('thanox_bypass_cooldown_end');
-      } catch (_) {}
-
-      if (currentStepIndex < totalBypassSteps - 1) {
-        const nextIdx = currentStepIndex + 1;
-        const nextLink = bypassLinks[nextIdx];
-        const nextUrl = nextLink?.url || 'https://layma.net/i1vAwGviV';
-        setCurrentStepIndex(nextIdx);
-        setActiveBypassUrl(nextUrl);
-        setPasscode('');
-        
-        const cd = state.stats?.bypassCooldownSeconds || 60;
-        setBypassCooldown(cd);
+        // Auto open link in new tab
         try {
-          localStorage.setItem('thanox_pending_step', String(nextIdx + 1));
-          localStorage.setItem('thanox_bypass_start_time', String(Date.now()));
-          localStorage.setItem('thanox_bypass_cooldown_end', String(Date.now() + cd * 1000));
-        } catch (_) {}
-
-        if (state.sessionId) {
-          api.completeBypass(state.sessionId, currentStepIndex, false).catch(() => {});
-          api.startBypass(state.sessionId, nextIdx, totalBypassSteps, nextLink?.title).catch(() => {});
+          const win = window.open(targetUrl, '_blank', 'noopener,noreferrer');
+          if (!win) {
+            setToastMsg({ text: 'Trình duyệt chặn popup. Nhấn vào nút "VƯỢT LINK NGAY" bên dưới để mở link.', isError: false });
+          }
+        } catch (_) {
+          setToastMsg({ text: 'Không thể tự động mở tab mới. Nhấn nút bên dưới để mở link.', isError: false });
         }
-
-        try {
-          window.open(nextUrl, '_blank', 'noopener,noreferrer');
-        } catch (_) {}
       } else {
-        if (state.sessionId) {
-          api.completeBypass(state.sessionId, currentStepIndex, true).catch(() => {});
-        }
-        try {
-          localStorage.removeItem('thanox_done_step');
-          localStorage.removeItem('thanox_done_step_time');
-          localStorage.removeItem('thanox_bypass_cooldown_end');
-        } catch (_) {}
-        actions.completeStep1AndStartStep2();
-        setCurrentStepIndex(0);
-        setCompletedSteps(0);
-        setPasscode('');
-        setActiveBypassUrl('');
+        setToastMsg({ text: (data && (data.msg || data.error?.message)) || 'Đã xảy ra lỗi, vui lòng thử lại.', isError: true });
       }
+    } catch (err: any) {
+      setIsGenerating(false);
+      setToastMsg({ text: 'Lỗi kết nối máy chủ: ' + (err?.message || err), isError: true });
     }
   };
 
-  const getButtonText = () => {
-    if (state.isLoading) return '⏳ Đang kết nối máy chủ...';
-
+  const getMainButtonText = () => {
+    if (isGenerating) return '⏳ Đang tạo link...';
     if (isIpLimitReached) {
       const waitTime = state.stats?.resetFormatted || 'vài tiếng';
       return `🚫 ĐÃ HẾT LƯỢT HÔM NAY (QUAY LẠI SAU ${waitTime.toUpperCase()})`;
     }
-
-    if (completedSteps >= totalBypassSteps && totalBypassSteps > 0) {
-      return `🚀 ĐÃ XONG TẤT CẢ BƯỚC → NHẬN KEY TẠI SERVERKEY`;
-    }
-    
-    if (state.status === 'created' || state.status === 'type_selected') {
-      const typeLabel = (state.proxyType || 'ipa').toUpperCase();
-      if (completedSteps > 0 && completedSteps < totalBypassSteps) {
-        return `⚡ TIẾP TỤC VƯỢT LINK ${completedSteps + 1} (BƯỚC ${completedSteps + 1}/${totalBypassSteps})`;
-      }
-      return `⚡ TẠO LINK NHẬN KEY PROXY ${typeLabel}`;
-    }
-
-    if (state.status === 'step1_pending') {
-      if (bypassCooldown > 0) {
-        return `⏳ ĐANG VƯỢT LINK ${currentStepIndex + 1}/${totalBypassSteps} (${bypassCooldown}s)...`;
-      }
-      if (currentStepIndex < totalBypassSteps - 1) {
-        return `✓ ĐÃ VƯỢT XONG LINK ${currentStepIndex + 1} → SANG LINK ${currentStepIndex + 2}/${totalBypassSteps}`;
-      }
-      return `✓ ĐÃ VƯỢT XONG TẤT CẢ → LẤY KEY TẠI SERVERKEY`;
-    }
-    return undefined;
+    if (btnText) return btnText;
+    if (proxyType === 'ipa') return '⚡ TẠO LINK NHẬN KEY PROXY IPA';
+    if (proxyType === 'vpn') return '⚡ TẠO LINK NHẬN KEY PROXY VPN';
+    return '⚡ TẠO LINK NHẬN KEY PROXY IPA';
   };
 
-  // Selector is disabled when actively in bypass, key ready, or when IP limit reached
-  const isSelectorDisabled = isIpLimitReached || ['step1_pending', 'step2_pending', 'key_ready'].includes(state.status);
-  
-  // Action button is disabled during loading, key ready, IP limit reached, or during the 15s anti-cheat cooldown
-  const isActionDisabled = isIpLimitReached || state.status === 'key_ready' || state.isLoading || bypassCooldown > 0;
-  
   const isMaintenance = Boolean(state.stats?.maintenanceMode);
 
   return (
@@ -337,165 +111,66 @@ export function Home() {
       ) : (
         <>
           {/* Limit Reached Notice with Live Countdown */}
-          {isIpLimitReached && state.status !== 'key_ready' && (
+          {isIpLimitReached && (
             <LimitReachedCard stats={state.stats} onResetTimeReached={actions.loadStats} />
           )}
 
-          {state.status !== 'key_ready' && (
-            <Card title="Nhận Key Miễn Phí" tag="// FREE KEY SYSTEM">
-              <LoadingOverlay isLoading={state.isLoading} />
+          {/* Main Card — Nhận Key Miễn Phí */}
+          <Card title="Nhận Key Miễn Phí" tag="// FREE KEY SYSTEM">
+            {/* Type Selector (IPA vs VPN) */}
+            <TypeSelector 
+              selectedType={proxyType} 
+              onSelect={handleSelectType}
+              disabled={isIpLimitReached || isGenerating}
+            />
+            
+            {/* Package Info — shows 24h key duration & live stats */}
+            <PackageInfo proxyType={proxyType} stats={state.stats} />
+            
+            {/* Result Box (shown after generating link, matching reference site #resultBox) */}
+            <div id="resultBox" className={`result-box ${createdUrl ? 'show' : ''}`}>
+              <div className="result-label">// LINK ĐÃ SẴN SÀNG</div>
+              <div id="resultUrl" className="result-url">
+                {createdUrl}
+              </div>
+              <button 
+                type="button" 
+                className="btn-main" 
+                style={{ marginTop: '0.5rem' }} 
+                onClick={() => {
+                  if (createdUrl) window.open(createdUrl, '_blank', 'noopener,noreferrer');
+                }}
+              >
+                ⚡ VƯỢT LINK NGAY
+              </button>
+            </div>
 
-              {/* Type Selector (IPA vs VPN) */}
-              <TypeSelector 
-                selectedType={state.proxyType} 
-                onSelect={actions.selectType}
-                disabled={isSelectorDisabled}
-              />
-              
-              {/* Package Info — shows 24h key duration & live stats */}
-              {state.proxyType && <PackageInfo proxyType={state.proxyType} stats={state.stats} />}
-              
-              {/* Step Completion Notice Banner when user finished a step */}
-              {completedSteps > 0 && totalBypassSteps > 0 && (
-                <div className="step-success-box">
-                  <div className="step-success-title">
-                    <span style={{ fontSize: '1.15rem' }}>🎉</span>
-                    <span>ĐÃ VƯỢT XONG BƯỚC {completedSteps}/{totalBypassSteps}!</span>
-                  </div>
-                  <p className="step-success-text">
-                    {state.stats?.stepSuccessMsg
-                      ? state.stats.stepSuccessMsg
-                          .replace('{step}', String(completedSteps))
-                          .replace('{total}', String(totalBypassSteps))
-                      : `Bạn đã vượt xong ${completedSteps} bước rồi! Hãy bấm nút bên dưới để tiếp tục vượt Bước ${Math.min(completedSteps + 1, totalBypassSteps)}.`}
-                  </p>
-                  <div className="step-progress-row">
-                    {bypassLinks.map((_, i) => (
-                      <div key={i} className={`step-dot ${i < completedSteps ? 'done' : i === completedSteps ? 'current' : 'todo'}`}>
-                        <span>{i < completedSteps ? '✓' : i + 1}</span>
-                        <label>{i < completedSteps ? `Xong ${i + 1}` : `Bước ${i + 1}`}</label>
-                      </div>
-                    ))}
-                    <div className={`step-dot ${completedSteps >= totalBypassSteps ? 'done' : 'todo'}`}>
-                      <span>🔑</span>
-                      <label>ServerKey</label>
-                    </div>
-                  </div>
-                </div>
-              )}
+            {/* Error / Toast message */}
+            {toastMsg && (
+              <div className={`error-box show ${toastMsg.isError ? 'error' : ''}`}>
+                {toastMsg.text}
+              </div>
+            )}
 
-              {/* Step 1..N: Multi-step Bypass Links */}
-              {state.status === 'step1_pending' && (
-                <>
-                  <ResultBox 
-                    bypassUrl={activeBypassUrl || state.bypassUrl || currentLink?.url || ''} 
-                    label={totalBypassSteps > 1 ? `// MÁY CHỦ XÁC THỰC LỚP ${currentStepIndex + 1}/${totalBypassSteps}` : '// LINK XÁC THỰC THIẾT BỊ'}
-                    buttonText={`⚡ MỞ LINK XÁC THỰC BƯỚC ${currentStepIndex + 1}`}
-                  />
+            {/* Loading Overlay */}
+            <div className={`loading-overlay ${isGenerating ? 'show' : ''}`}>
+              <div className="spinner"></div>
+              <div className="loading-text">Đang khởi tạo link...</div>
+            </div>
 
-                  {currentLink?.passcode && (
-                    <div style={{
-                      marginTop: '1rem',
-                      padding: '0.85rem 1rem',
-                      background: 'rgba(0, 240, 255, 0.05)',
-                      border: '1px solid rgba(0, 240, 255, 0.25)',
-                      borderRadius: '8px',
-                      textAlign: 'left'
-                    }}>
-                      <div style={{ color: 'var(--neon-cy)', fontWeight: 700, fontSize: '0.75rem', marginBottom: '0.35rem' }}>
-                        🔒 XÁC MINH BƯỚC {currentStepIndex + 1}:
-                      </div>
-                      <div style={{ color: 'var(--text-dim)', fontSize: '0.72rem', marginBottom: '0.6rem', lineHeight: '1.4' }}>
-                        Vui lòng hoàn thành vượt link ở tab vừa mở. Nếu bạn có <b>Mã Xác Nhận</b> ở trang đích, hãy nhập vào đây:
-                      </div>
-                      <input 
-                        type="text"
-                        placeholder={`Nhập mã xác nhận Bước ${currentStepIndex + 1}...`}
-                        value={passcode}
-                        onChange={(e) => setPasscode(e.target.value)}
-                        style={{
-                          width: '100%',
-                          padding: '0.55rem 0.75rem',
-                          background: 'rgba(5, 10, 25, 0.8)',
-                          border: '1px solid rgba(0, 240, 255, 0.3)',
-                          borderRadius: '6px',
-                          color: '#fff',
-                          fontFamily: 'var(--font-mono)',
-                          fontSize: '0.85rem',
-                          boxSizing: 'border-box'
-                        }}
-                      />
-                    </div>
-                  )}
-                </>
-              )}
+            {/* Main CTA button */}
+            <button 
+              type="button" 
+              className="btn-main" 
+              id="getBtn" 
+              onClick={doGetKey}
+              disabled={isIpLimitReached || isGenerating}
+            >
+              {getMainButtonText()}
+            </button>
+          </Card>
 
-
-              
-              <ErrorBox error={state.error} onDismiss={actions.clearError} />
-
-              {bypassCooldown > 0 && state.status === 'step1_pending' && (
-                <div style={{
-                  margin: '0.85rem 0',
-                  padding: '0.65rem 0.85rem',
-                  background: 'rgba(255, 170, 0, 0.08)',
-                  border: '1px dashed rgba(255, 170, 0, 0.4)',
-                  borderRadius: '8px',
-                  textAlign: 'center',
-                  fontSize: '0.75rem',
-                  color: 'var(--neon-amb)',
-                  lineHeight: '1.45'
-                }}>
-                  <div>⏱️ <b>HỆ THỐNG ĐANG GIÁM SÁT TIẾN TRÌNH VƯỢT LINK:</b></div>
-                  <div style={{ marginTop: '0.25rem', color: 'var(--text-dim)', fontSize: '0.72rem' }}>
-                    Vui lòng hoàn thành nhiệm vụ trên trang Layma vừa mở. Nút sẽ mở sau <b>{bypassCooldown}s</b> (hoặc web sẽ tự động chuyển tiếp khi bạn hoàn tất).
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const newDone = currentStepIndex + 1;
-                      setCompletedSteps(newDone);
-                      try {
-                        localStorage.setItem('thanox_done_step', String(newDone));
-                        localStorage.setItem('thanox_done_step_time', String(Date.now()));
-                        localStorage.removeItem('thanox_pending_step');
-                        localStorage.removeItem('thanox_bypass_cooldown_end');
-                      } catch (_) {}
-                      setBypassCooldown(0);
-                      if (currentStepIndex < totalBypassSteps - 1) {
-                        const nextIdx = currentStepIndex + 1;
-                        setCurrentStepIndex(nextIdx);
-                        const nextLink = bypassLinks[nextIdx];
-                        setActiveBypassUrl(nextLink?.url || '');
-                      }
-                    }}
-                    style={{
-                      marginTop: '0.6rem',
-                      background: 'rgba(0, 240, 255, 0.12)',
-                      border: '1px solid var(--border-cy)',
-                      borderRadius: '6px',
-                      color: 'var(--neon-cy)',
-                      fontSize: '0.72rem',
-                      padding: '5px 12px',
-                      cursor: 'pointer',
-                      fontWeight: 700
-                    }}
-                  >
-                    ⚡ Tôi Đã Vượt Xong Trên Layma → Sang Bước 2 Ngay
-                  </button>
-                </div>
-              )}
-              
-              <ActionButton 
-                onClick={handleActionClick}
-                disabled={isActionDisabled}
-                isLoading={state.isLoading}
-                proxyType={state.proxyType}
-                textOverride={getButtonText()}
-              />
-            </Card>
-          )}
-
+          {/* Info Card — Thông Tin */}
           <Card title="Thông Tin" tag="// SESSION.INFO">
             <SessionInfo state={state} />
           </Card>

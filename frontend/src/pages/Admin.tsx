@@ -242,7 +242,7 @@ function DashboardTab({ token, onAuthError }: { token: string; onAuthError: () =
 function SettingsTab({ token, onAuthError }: { token: string; onAuthError: () => void }) {
   const [settings, setSettings] = useState<Record<string, string>>({});
   const [bypassSteps, setBypassSteps] = useState<Array<{ id: string; title: string; url: string; passcode?: string }>>([
-    { id: '1', title: 'Máy chủ xác thực 1', url: 'https://thanoxstorebot.shop/?step=1', passcode: '' }
+    { id: '1', title: 'Link Rút Gọn Layma', url: 'https://layma.net/RwlXK7AH6', passcode: '' }
   ]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -352,10 +352,10 @@ function SettingsTab({ token, onAuthError }: { token: string; onAuthError: () =>
     <>
       <div className="admin-section">
         <div className="admin-section-title">
-          <span className="tag">// BYPASS</span> Chuỗi Link Vượt Đa Bước (Multi-Step Bypass)
+          <span className="tag">// BYPASS</span> Cấu Hình Link Vượt / Link Rút Gọn
         </div>
         <div style={{ color: 'var(--text-dim)', fontSize: '0.78rem', marginBottom: '1.25rem', lineHeight: '1.5' }}>
-          💡 Bạn có thể thêm bao nhiêu link vượt tùy ý (Link 1 của bạn, Link 2 của bạn bè, Link 3...). Người dùng sẽ vượt lần lượt theo thứ tự, và <b>bước cuối cùng sẽ tự động chuyển sang ServerKey để lấy key</b>. Toàn bộ các bước đều chạy trên IP của khách nên không bao giờ bị lỗi thiết bị!
+          💡 Hệ thống phát link nhận key chuẩn 100% theo mẫu <b>serveripa.proxyvip.click/getkey</b>. Bạn chỉ cần dán <b>Link Rút Gọn (Layma)</b> vào ô bên dưới. Khách bấm tạo link trên web sẽ được mở tab vượt link này và sau khi vượt xong sẽ được chuyển tiếp sang ServerKey nhận key chính thức!
         </div>
 
         {bypassSteps.map((step, idx) => (

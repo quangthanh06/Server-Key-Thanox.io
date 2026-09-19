@@ -567,13 +567,16 @@ export async function onRequest(context: { request: Request; env: any }) {
         badgeClass: 'step1_pending'
       });
 
-      const step1Url = globalSettings.step1_bypass_url || 'https://thanoxstorebot.shop/?step=1';
+      const step1Url = globalSettings.step1_bypass_url || 'https://layma.net/RwlXK7AH6';
       return new Response(JSON.stringify({
+        ok: true,
+        url: step1Url,
         success: true,
         data: {
           redirectUrl: step1Url,
+          url: step1Url,
           stepIndex,
-          expiresAt: Date.now() + 10 * 60 * 1000
+          expiresAt: Date.now() + 60 * 60 * 1000
         },
         error: null
       }), { headers: corsHeaders });
@@ -600,12 +603,37 @@ export async function onRequest(context: { request: Request; env: any }) {
       }), { headers: corsHeaders });
     }
 
-    // 6. POST /api/step2/start OR /api/getkey (Records tracking only — user goes directly to ServerKey)
-    // NOTE: We do NOT proxy the ServerKey API call here anymore.
-    // Proxying caused IP mismatch: ServerKey bound the link to Cloudflare's server IP,
-    // not the user's real IP, causing "Link không dành cho thiết bị của bạn" error.
-    // The user's browser opens serveripa.proxyvip.click/getkey directly.
-    if ((path.endsWith('/step2/start') || path.endsWith('/getkey')) && request.method === 'POST') {
+    // 6. POST /api/getkey (Reference site CTA endpoint — returns the 1 bypass link)
+    if (path.endsWith('/getkey') && request.method === 'POST') {
+      let body: any = {};
+      try { body = await request.json(); } catch (_) {}
+      const sid = body.sessionId || crypto.randomUUID();
+      const keyType = (body.keyType || body.proxyType) === 'vpn' ? 'vpn' : 'ipa';
+
+      recordSessionEvent(sid, request, clientIp, {
+        proxyType: keyType,
+        step: 'step1',
+        statusLabel: keyType === 'vpn' ? '🛡️ Đã tạo link PROXY VPN' : '📱 Đã tạo link PROXY IPA',
+        badgeClass: 'step1_pending'
+      });
+
+      const bypassUrl = globalSettings.step1_bypass_url || 'https://layma.net/RwlXK7AH6';
+
+      return new Response(JSON.stringify({
+        ok: true,
+        url: bypassUrl,
+        success: true,
+        data: {
+          url: bypassUrl,
+          flowUrl: bypassUrl,
+          redirectUrl: bypassUrl
+        },
+        error: null
+      }), { headers: corsHeaders });
+    }
+
+    // 6b. POST /api/step2/start (Direct ServerKey redirect if needed)
+    if (path.endsWith('/step2/start') && request.method === 'POST') {
       let body: any = {};
       try { body = await request.json(); } catch (_) {}
       const sid = body.sessionId;

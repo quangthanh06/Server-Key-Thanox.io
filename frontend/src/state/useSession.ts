@@ -118,10 +118,10 @@ export function useSession() {
     loadStats();
   };
 
-  // Only load live stats on initial mount
+  // Auto-poll stats every 15s (matching reference site)
   useEffect(() => {
     loadStats();
-    const interval = setInterval(loadStats, 30000);
+    const interval = setInterval(loadStats, 15000);
     return () => clearInterval(interval);
   }, [loadStats]);
 
