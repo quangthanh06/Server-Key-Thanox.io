@@ -42,71 +42,7 @@ export interface LiveSession {
 }
 
 // In-memory sessions tracking map (keeps up to 200 recent sessions)
-const activeSessions: Map<string, LiveSession> = new Map([
-  [
-    'sess_demo_1',
-    {
-      id: 'sess_1092_demo',
-      ip: '113.190.234.12',
-      city: 'Hà Nội',
-      country: 'VN',
-      region: 'Hanoi',
-      isp: 'Viettel Group',
-      location: '🇻🇳 Hà Nội, VN',
-      device: 'iPhone 15 Pro',
-      os: 'iOS 17.5',
-      deviceIcon: '📱',
-      proxyType: 'ipa',
-      step: 'step2',
-      statusLabel: '🚀 Đang vượt ServerKey',
-      badgeClass: 'step2_pending',
-      createdAt: Date.now() - 65000,
-      updatedAt: Date.now() - 15000
-    }
-  ],
-  [
-    'sess_demo_2',
-    {
-      id: 'sess_1088_demo',
-      ip: '14.161.45.89',
-      city: 'TP. Hồ Chí Minh',
-      country: 'VN',
-      region: 'Ho Chi Minh',
-      isp: 'FPT Telecom',
-      location: '🇻🇳 TP. Hồ Chí Minh, VN',
-      device: 'Samsung Galaxy S24',
-      os: 'Android 14',
-      deviceIcon: '🤖',
-      proxyType: 'vpn',
-      step: 'step1',
-      statusLabel: '🟡 Đang vượt Link 1 (Admin)',
-      badgeClass: 'step1_pending',
-      createdAt: Date.now() - 135000,
-      updatedAt: Date.now() - 40000
-    }
-  ],
-  [
-    'sess_demo_3',
-    {
-      id: 'sess_1075_demo',
-      ip: '171.244.112.50',
-      city: 'Đà Nẵng',
-      country: 'VN',
-      region: 'Da Nang',
-      isp: 'VNPT',
-      location: '🇻🇳 Đà Nẵng, VN',
-      device: 'iPad Pro',
-      os: 'iPadOS 17.4',
-      deviceIcon: '📱',
-      proxyType: 'ipa',
-      step: 'completed',
-      statusLabel: '✅ Đã nhận Key thành công',
-      badgeClass: 'key_ready',
-      createdAt: Date.now() - 420000,
-      updatedAt: Date.now() - 190000
-    }
-  ]
-]);
+const activeSessions: Map<string, LiveSession> = new Map();
 
 function parseUserAgent(ua: string): { device: string; os: string; deviceIcon: string } {
   if (!ua) return { device: 'Không rõ', os: 'Trình duyệt Web', deviceIcon: '💻' };
@@ -245,28 +181,6 @@ function recordSessionEvent(
   return key;
 }
 
-let sessionsInitialized = false;
-async function ensureInitialSessions() {
-  if (!sessionsInitialized) {
-    sessionsInitialized = true;
-    const now = Date.now();
-    for (const [_, sess] of activeSessions.entries()) {
-      if (sess.createdAt <= 0 || sess.createdAt < 1000000000000) {
-        if (sess.id.includes('1092')) {
-          sess.createdAt = now - 65000;
-          sess.updatedAt = now - 15000;
-        } else if (sess.id.includes('1088')) {
-          sess.createdAt = now - 135000;
-          sess.updatedAt = now - 40000;
-        } else if (sess.id.includes('1075')) {
-          sess.createdAt = now - 420000;
-          sess.updatedAt = now - 190000;
-        }
-      }
-    }
-  }
-}
-
 async function loadSessionsFromCache() {
   try {
     const cache = (caches as any).default;
@@ -276,6 +190,7 @@ async function loadSessionsFromCache() {
       const data = await cacheRes.json() as [string, LiveSession][];
       if (Array.isArray(data) && data.length > 0) {
         for (const [id, sess] of data) {
+          if (id.includes('demo')) continue; // Skip legacy demo sessions
           if (!activeSessions.has(id) || (sess.updatedAt > (activeSessions.get(id)?.updatedAt || 0))) {
             activeSessions.set(id, sess);
           }
@@ -301,7 +216,6 @@ async function saveSessionsToCache() {
 }
 
 export async function onRequest(context: { request: Request; env: any }) {
-  await ensureInitialSessions();
   await loadSessionsFromCache();
   const { request } = context;
   const url = new URL(request.url);
@@ -362,10 +276,10 @@ export async function onRequest(context: { request: Request; env: any }) {
         success: true,
         data: {
           stats: {
-            todaySessions: Math.max(todaySessions, 12),
-            todayKeys: Math.max(todayKeys, 8),
-            totalKeys: 45 + todayKeys,
-            activeSessions: Math.max(activeCount, 3),
+            todaySessions: todaySessions,
+            todayKeys: todayKeys,
+            totalKeys: todayKeys,
+            activeSessions: activeCount,
             statusBreakdown: [
               { overall_status: 'key_ready', count: todayKeys },
               { overall_status: 'step2_pending', count: allSessions.filter(s => s.step === 'step2').length },
@@ -422,6 +336,10 @@ export async function onRequest(context: { request: Request; env: any }) {
     // DELETE /api/admin/sessions (Clear history)
     if (path.endsWith('/admin/sessions') && request.method === 'DELETE') {
       activeSessions.clear();
+      try {
+        const cache = (caches as any).default;
+        if (cache) await cache.delete('https://serverkey-thanox.pages.dev/__active_sessions_store__');
+      } catch (_) {}
       return new Response(JSON.stringify({
         success: true,
         data: { message: 'Đã xóa toàn bộ lịch sử session' },
@@ -434,16 +352,7 @@ export async function onRequest(context: { request: Request; env: any }) {
       return new Response(JSON.stringify({
         success: true,
         data: {
-          keys: [
-            {
-              id: 'k_' + Date.now().toString(36),
-              key_value: 'THANOX-IPA-VIP-8899',
-              proxy_type: 'ipa',
-              status: 'active',
-              created_at: new Date().toISOString(),
-              expires_at: new Date(Date.now() + 86400000).toISOString()
-            }
-          ]
+          keys: []
         },
         error: null
       }), { headers: corsHeaders });
@@ -513,7 +422,20 @@ export async function onRequest(context: { request: Request; env: any }) {
     if (path.endsWith('/session') && request.method === 'POST') {
       let body: any = {};
       try { body = await request.json(); } catch (_) {}
-      const sessionId = body.sessionId || crypto.randomUUID();
+      let sessionId = body.sessionId;
+
+      if (!sessionId) {
+        const now = Date.now();
+        for (const [id, sess] of activeSessions.entries()) {
+          if (sess.ip === clientIp && (now - sess.updatedAt < 15 * 60 * 1000)) {
+            sessionId = id;
+            break;
+          }
+        }
+      }
+      if (!sessionId) {
+        sessionId = crypto.randomUUID();
+      }
 
       recordSessionEvent(sessionId, request, clientIp, {
         step: 'visited',

@@ -2,7 +2,7 @@ import { apiRequest } from './client';
 import type { ProxyType, SystemStats } from '../types';
 
 export const api = {
-  createSession: () => apiRequest<{ sessionId: string }>('/api/session', { method: 'POST' }),
+  createSession: (sessionId?: string) => apiRequest<{ sessionId: string; stats?: SystemStats }>('/api/session', { method: 'POST', body: sessionId ? JSON.stringify({ sessionId }) : undefined }),
   getSession: (id: string) => apiRequest<any>(`/api/session/${id}`),
   selectType: (sessionId: string, proxyType: ProxyType) => apiRequest<any>('/api/select-type', { method: 'POST', body: JSON.stringify({ sessionId, proxyType }) }),
   startBypass: (sessionId: string, stepIndex = 0, totalSteps = 1, stepTitle?: string) => apiRequest<{ redirectUrl: string; expiresAt: number; stepIndex: number }>('/api/bypass/start', { method: 'POST', body: JSON.stringify({ sessionId, stepIndex, totalSteps, stepTitle }) }),

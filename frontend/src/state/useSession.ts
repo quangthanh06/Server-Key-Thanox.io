@@ -17,8 +17,9 @@ export function useSession() {
   // Instant local type selection (switches between IPA and VPN)
   const selectType = async (proxyType: ProxyType) => {
     dispatch({ type: 'TYPE_SELECTED', proxyType });
-    if (state.sessionId) {
-      api.selectType(state.sessionId, proxyType).catch(() => {});
+    const sid = state.sessionId || sessionStorage.getItem('pk_sess_id');
+    if (sid) {
+      api.selectType(sid, proxyType).catch(() => {});
     }
   };
 
@@ -39,7 +40,7 @@ export function useSession() {
     dispatch({ type: 'SET_LOADING', isLoading: true });
     dispatch({ type: 'CLEAR_ERROR' });
 
-    let sid = state.sessionId;
+    let sid = state.sessionId || sessionStorage.getItem('pk_sess_id') || undefined;
 
     // Create session if not already created
     if (!sid) {
@@ -49,6 +50,7 @@ export function useSession() {
       } else {
         sid = `sess_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
       }
+      sessionStorage.setItem('pk_sess_id', sid);
       dispatch({ type: 'SESSION_CREATED', sessionId: sid, stats: state.stats });
     }
 
@@ -117,6 +119,19 @@ export function useSession() {
     dispatch({ type: 'RESET_FLOW' });
     loadStats();
   };
+
+  // Initialize session on mount for real-time live tracking
+  useEffect(() => {
+    let mounted = true;
+    const storedSid = sessionStorage.getItem('pk_sess_id') || undefined;
+    api.createSession(storedSid).then((res) => {
+      if (mounted && res.data?.sessionId) {
+        sessionStorage.setItem('pk_sess_id', res.data.sessionId);
+        dispatch({ type: 'SESSION_CREATED', sessionId: res.data.sessionId, stats: state.stats });
+      }
+    }).catch(() => {});
+    return () => { mounted = false; };
+  }, []);
 
   // Auto-poll stats every 15s (matching reference site)
   useEffect(() => {
