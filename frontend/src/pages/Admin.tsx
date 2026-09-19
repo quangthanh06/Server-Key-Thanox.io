@@ -544,7 +544,16 @@ function SessionsTab({ token, onAuthError }: { token: string; onAuthError: () =>
     if (!isBackground) setRefreshing(true);
     const res = await adminApi.getSessions(token, 100);
     if (res.data?.sessions) {
-      setSessions(res.data.sessions);
+      setSessions((prev) => {
+        const map = new Map<string, any>();
+        for (const s of prev) {
+          if (!s.id?.includes('demo')) map.set(s.id, s);
+        }
+        for (const s of res.data.sessions) {
+          if (!s.id?.includes('demo')) map.set(s.id, s);
+        }
+        return Array.from(map.values()).sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+      });
     } else if (res.error?.code === 'UNAUTHORIZED') {
       onAuthError();
     }
@@ -568,7 +577,7 @@ function SessionsTab({ token, onAuthError }: { token: string; onAuthError: () =>
   const handleClearHistory = async () => {
     if (window.confirm('Bạn có chắc muốn xóa sạch toàn bộ lịch sử theo dõi phiên?')) {
       await adminApi.clearSessions(token);
-      fetchSessions();
+      setSessions([]);
     }
   };
 

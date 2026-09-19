@@ -108,7 +108,7 @@ function getGeoInfo(request: Request, clientIp: string) {
   return { city, country, region, isp, flag, location };
 }
 
-function recordSessionEvent(
+async function recordSessionEvent(
   sessionId: string | null,
   request: Request,
   clientIp: string,
@@ -118,7 +118,7 @@ function recordSessionEvent(
     statusLabel: string;
     badgeClass: string;
   }
-): string {
+): Promise<string> {
   const now = Date.now();
   const uaString = request.headers.get('user-agent') || '';
   const parsedUa = parseUserAgent(uaString);
@@ -176,7 +176,7 @@ function recordSessionEvent(
     if (oldestKey) activeSessions.delete(oldestKey);
   }
 
-  saveSessionsToCache().catch(() => {});
+  await saveSessionsToCache();
 
   return key;
 }
@@ -185,7 +185,8 @@ async function loadSessionsFromCache() {
   try {
     const cache = (caches as any).default;
     if (!cache) return;
-    const cacheRes = await cache.match('https://serverkey-thanox.pages.dev/__active_sessions_store__');
+    const req = new Request('https://serverkey-thanox.pages.dev/__active_sessions_store__', { method: 'GET' });
+    const cacheRes = await cache.match(req);
     if (cacheRes) {
       const data = await cacheRes.json() as [string, LiveSession][];
       if (Array.isArray(data) && data.length > 0) {
@@ -205,13 +206,15 @@ async function saveSessionsToCache() {
     const cache = (caches as any).default;
     if (!cache) return;
     const entries = Array.from(activeSessions.entries());
+    const req = new Request('https://serverkey-thanox.pages.dev/__active_sessions_store__', { method: 'GET' });
     const res = new Response(JSON.stringify(entries), {
+      status: 200,
       headers: {
         'Content-Type': 'application/json',
         'Cache-Control': 'public, max-age=86400, s-maxage=86400'
       }
     });
-    await cache.put('https://serverkey-thanox.pages.dev/__active_sessions_store__', res);
+    await cache.put(req, res);
   } catch (_) {}
 }
 
@@ -437,7 +440,7 @@ export async function onRequest(context: { request: Request; env: any }) {
         sessionId = crypto.randomUUID();
       }
 
-      recordSessionEvent(sessionId, request, clientIp, {
+      await recordSessionEvent(sessionId, request, clientIp, {
         step: 'visited',
         statusLabel: '⚡ Mới vào trang web',
         badgeClass: 'created'
@@ -460,7 +463,7 @@ export async function onRequest(context: { request: Request; env: any }) {
       const sid = body.sessionId;
       const proxyType = body.proxyType === 'vpn' ? 'vpn' : 'ipa';
 
-      recordSessionEvent(sid, request, clientIp, {
+      await recordSessionEvent(sid, request, clientIp, {
         proxyType,
         step: 'selected',
         statusLabel: proxyType === 'vpn' ? '🛡️ Đã chọn PROXY VPN' : '📱 Đã chọn PROXY IPA',
@@ -483,7 +486,7 @@ export async function onRequest(context: { request: Request; env: any }) {
       const totalSteps = typeof body.totalSteps === 'number' ? body.totalSteps : 1;
       const stepTitle = body.stepTitle || `Link ${stepIndex + 1}`;
 
-      recordSessionEvent(sid, request, clientIp, {
+      await recordSessionEvent(sid, request, clientIp, {
         step: 'step1',
         statusLabel: totalSteps > 1 ? `🟡 Đang vượt Link ${stepIndex + 1}/${totalSteps}` : `🟡 Đang vượt Link 1`,
         badgeClass: 'step1_pending'
@@ -512,7 +515,7 @@ export async function onRequest(context: { request: Request; env: any }) {
       const stepIndex = typeof body.stepIndex === 'number' ? body.stepIndex : 0;
       const isFinal = Boolean(body.isFinal);
 
-      recordSessionEvent(sid, request, clientIp, {
+      await recordSessionEvent(sid, request, clientIp, {
         step: isFinal ? 'step1_done' : 'step1',
         statusLabel: isFinal ? '🟢 Đã xong tất cả link vượt' : `🟢 Đã xong Link ${stepIndex + 1}`,
         badgeClass: 'step1_completed'
@@ -532,7 +535,7 @@ export async function onRequest(context: { request: Request; env: any }) {
       const sid = body.sessionId || crypto.randomUUID();
       const keyType = (body.keyType || body.proxyType) === 'vpn' ? 'vpn' : 'ipa';
 
-      recordSessionEvent(sid, request, clientIp, {
+      await recordSessionEvent(sid, request, clientIp, {
         proxyType: keyType,
         step: 'step1',
         statusLabel: keyType === 'vpn' ? '🛡️ Đã tạo link PROXY VPN' : '📱 Đã tạo link PROXY IPA',
@@ -561,7 +564,7 @@ export async function onRequest(context: { request: Request; env: any }) {
       const sid = body.sessionId;
       const keyType = (body.keyType || body.proxyType) === 'vpn' ? 'vpn' : 'ipa';
 
-      recordSessionEvent(sid, request, clientIp, {
+      await recordSessionEvent(sid, request, clientIp, {
         proxyType: keyType,
         step: 'step2',
         statusLabel: '🚀 Đang vượt ServerKey (trực tiếp)',
@@ -586,7 +589,7 @@ export async function onRequest(context: { request: Request; env: any }) {
       try { body = await request.json(); } catch (_) {}
       const sid = body.sessionId;
 
-      recordSessionEvent(sid, request, clientIp, {
+      await recordSessionEvent(sid, request, clientIp, {
         step: 'completed',
         statusLabel: '✅ Đã nhận Key thành công',
         badgeClass: 'key_ready'
