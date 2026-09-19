@@ -40,11 +40,4 @@
   box-shadow: none;
 }
 
-@media (max-width: 480px) {
-  .btn-main, .pk-action-btn {
-    padding: 0.8rem 0.75rem;
-    font-size: 0.78rem;
-    letter-spacing: 0.06em;
-    border-radius: 6px;
-  }
-}
+
